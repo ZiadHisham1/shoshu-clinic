@@ -15,7 +15,7 @@ export const siteConfig = {
   name: "شوشو كلينك",
   description: "تخسيس، علاج طبيعي وحجامة — احجزي استشارتك الأولى مجاناً",
   // Placeholder: replace with the clinic's real WhatsApp / booking URL.
-  bookingUrl: `${process.env.SITE_DOMAIN}/booking`,
+  bookingUrl: `/booking`,
   availability: "متاح 7 أيام في الأسبوع",
 };
 
