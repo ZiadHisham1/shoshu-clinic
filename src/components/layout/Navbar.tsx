@@ -16,7 +16,7 @@ const Navbar = () => (
 
       <Link
         href={siteConfig.bookingUrl}
-        className="flex h-8 items-center border border-black/20 justify-center rounded-full bg-figma-tab px-4 font-tajawal text-sm font-extrabold text-figma-text transition hover:opacity-90 sm:h-9 sm:px-5 sm:text-base lg:h-[29px] lg:px-5 lg:text-[18px]"
+        className="flex h-8 items-center border border-black/20 justify-center rounded-full bg-white px-4 py-5 font-tajawal text-sm font-extrabold text-figma-text transition hover:opacity-90 sm:h-9 sm:px-5 sm:text-base lg:h-[29px] lg:px-5 lg:text-[18px]"
       >
         احجزي الان
       </Link>

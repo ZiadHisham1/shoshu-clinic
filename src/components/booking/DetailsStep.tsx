@@ -112,7 +112,7 @@ export function DetailsStep({
             {/* Live counter / check */}
             <span
               className={
-                "pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 font-tajawal text-xs " +
+                "pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 font-tajawal text-xs " +
                 (phoneValid ? "text-emerald-500" : "text-figma-textMut")
               }
               aria-hidden

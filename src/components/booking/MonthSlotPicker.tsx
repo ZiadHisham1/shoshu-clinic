@@ -60,7 +60,7 @@ export function MonthSlotPicker({ slots, selected, onSelect }: Props) {
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
       {/* ═══════════ CALENDAR ═══════════ */}
-      <div className="rounded-sm bg-white p-4 ring-1 ring-black/10 sm:p-6">
+      <div className="rounded-lg bg-white p-4 ring-1 ring-black/10 sm:p-6">
         <DayPicker
           mode="single"
           selected={pickedDate}
@@ -153,7 +153,7 @@ export function MonthSlotPicker({ slots, selected, onSelect }: Props) {
       </div>
 
       {/* ═══════════ SLOTS ═══════════ */}
-      <section className="flex flex-col gap-4">
+      <section className="flex flex-col gap-4 bg-white rounded-lg p-8 border border-black/20">
         <header className="flex items-baseline justify-between gap-3">
           <h3 className="font-tajawal text-base font-bold text-figma-text sm:text-lg">
             {pickedDate.toLocaleDateString("ar-EG", {
