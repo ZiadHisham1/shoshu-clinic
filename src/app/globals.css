@@ -1,0 +1,172 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Space-separated RGB channels so Tailwind can apply opacity modifiers. */
+:root {
+  --background: 253 243 240;
+  --surface: 255 249 247;
+  --border: 240 201 210;
+  --muted: 150 70 98;
+  --foreground: 84 20 56;
+  --primary: 190 52 98;
+  --primary-strong: 150 30 78;
+  --accent: 248 222 228;
+
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+
+  --shadow-soft: 0 6px 20px -8px rgb(var(--primary) / 0.25);
+  --shadow-lifted: 0 14px 30px -10px rgb(var(--primary) / 0.35);
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+}
+
+@keyframes pulse-slow {
+  0%, 100% { background-color: rgb(236 253 245 / 0.6); }
+  50% { background-color: rgb(209 250 229 / 0.9); }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 2s ease-in-out infinite;
+}
+
+/* ============================================================
+   react-day-picker theme
+   ============================================================ */
+.rdp-root {
+  --rdp-accent-color: #E91E63;         /* your primary pink */
+  --rdp-accent-background-color: #FCE4EC;
+  --rdp-day-width: 40px;
+  --rdp-day-height: 40px;
+  --rdp-day_button-width: 40px;
+  --rdp-day_button-height: 40px;
+  --rdp-day_button-border-radius: 9999px;
+  --rdp-selected-border: none;
+  --rdp-outside-opacity: 0.3;
+  font-family: inherit;
+}
+
+.rdp-month_caption {
+  font-family: var(--font-lalezar), sans-serif;
+  font-weight: 400;
+  color: #4A1F2B;
+  font-size: 1.05rem;
+  padding: 0.5rem 0 1rem;
+}
+
+.rdp-weekday {
+  color: #4A1F2B99;
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
+.rdp-day_button {
+  font-family: inherit;
+  color: #4A1F2B;
+  border-radius: 15px;
+}
+
+.rdp-day_button:hover:not([disabled]) {
+  background-color: #FFF8F3;
+}
+
+.rdp-selected .rdp-day_button {
+  background-color: #E91E63;
+  color: #fff;
+  font-weight: 600;
+}
+
+.rdp-today:not(.rdp-selected) .rdp-day_button {
+  font-weight: 700;
+  color: #E91E63;
+}
+
+.rdp-disabled .rdp-day_button {
+  color: #4A1F2B33;
+  text-decoration: line-through;
+}
+
+.rdp-nav {
+  gap: 0.5rem;
+}
+
+.rdp-button_previous,
+.rdp-button_next {
+  border-radius: 9999px;
+  width: 32px;
+  height: 32px;
+  color: #4A1F2B;
+}
+
+.rdp-button_previous:hover,
+.rdp-button_next:hover {
+  background-color: #FFF8F3;
+}
+
+.rdp-day_has_slots .rdp-day_button::after {
+  content: "";
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 9999px;
+  background: #E91E63;
+  opacity: 0.6;
+}
+.rdp-day_has_slots .rdp-day_button {
+  position: relative;
+}
+
+.rdp-month {
+  margin-inline: auto;
+}
+
+.rdp-months {
+  justify-content: center;
+}
+
+.rdp-day {
+  border-radius: 5px;
+}
+
+
+.rdp-chevron{
+  fill: #000000!important;
+}
+
+/* ============================================================
+   Figma palette tokens for utility classes
+   ============================================================ */
+@layer base {
+  html, body {
+    background-color: #ffe5ec;
+  }
+}
+
+/* Optional: subtle scrollbar for tabs on mobile */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
