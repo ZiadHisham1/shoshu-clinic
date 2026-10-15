@@ -15,7 +15,7 @@ interface Service {
   duration_minutes: number;
 }
 
-interface Slot {
+export interface Slot {
   id: string;
   service_id: string;
   start_at: string;

@@ -50,7 +50,6 @@ export default async function AdminBookingsPage() {
               {user?.firstName ?? user?.emailAddresses[0]?.emailAddress}
             </p>
           </div>
-          <UserButton afterSignOutUrl="/sign-in" />
         </header>
 
         <BookingsTable initialBookings={bookings} />

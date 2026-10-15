@@ -1,11 +1,11 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { SlotsManager } from "./SlotsManager";
+import { SlotsManager, type Slot } from "./SlotsManager";
 
 export const metadata = { title: "إدارة المواعيد — شوشو كلينك" };
 export const dynamic = "force-dynamic";
 
 export default async function AdminSlotsPage() {
-  const supabase = createAdminClient();        // ← only here
+  const supabase = createAdminClient(); // ← only here
 
   const [servicesRes, slotsRes] = await Promise.all([
     supabase
@@ -27,15 +27,23 @@ export default async function AdminSlotsPage() {
   if (servicesRes.error || slotsRes.error) {
     return (
       <main className="p-8 text-center">
-        <h1 className="font-lalezar text-2xl text-ink">
-          تعذر تحميل المواعيد
-        </h1>
+        <h1 className="font-lalezar text-2xl text-ink">تعذر تحميل المواعيد</h1>
         <p className="text-sm text-ink/60 mt-2">
           {(servicesRes.error || slotsRes.error)?.message}
         </p>
       </main>
     );
   }
+
+  // Supabase types a joined relation as an array; we only ever get one service per slot.
+  const slots: Slot[] = (slotsRes.data ?? []).map((s) => ({
+    id: s.id,
+    service_id: s.service_id,
+    start_at: s.start_at,
+    end_at: s.end_at,
+    is_booked: s.is_booked,
+    service: Array.isArray(s.service) ? s.service[0] : s.service,
+  }));
 
   return (
     <main className="min-h-screen bg-cream-100 px-4 py-8">
@@ -47,10 +55,7 @@ export default async function AdminSlotsPage() {
           </p>
         </header>
 
-        <SlotsManager
-          services={servicesRes.data ?? []}
-          initialSlots={slotsRes.data ?? []}
-        />
+        <SlotsManager services={servicesRes.data ?? []} initialSlots={slots} />
       </div>
     </main>
   );

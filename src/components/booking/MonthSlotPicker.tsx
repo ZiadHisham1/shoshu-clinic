@@ -70,8 +70,8 @@ export function MonthSlotPicker({ slots, selected, onSelect }: Props) {
           dir="rtl"
           showOutsideDays={false}
           captionLayout="dropdown"
-          fromYear={today.getFullYear()}
-          toYear={today.getFullYear() + 1}
+          startMonth={new Date(today.getFullYear(), today.getMonth(), 1)}
+          endMonth={new Date(today.getFullYear() + 1, 11, 31)}
           modifiers={{
             hasSlots: availableDates,
           }}
