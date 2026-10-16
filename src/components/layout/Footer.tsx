@@ -13,14 +13,14 @@ const Footer = () => (
 
     {/* Logo */}
     <p className="mt-6 font-sacramento text-4xl text-figma-footer sm:text-5xl">
-      Shosho clinic
+      Shimaa clinic
     </p>
 
     {/* Socials — inline SVG (brand icons removed from lucide-react) */}
     <div className="mt-6 flex items-center justify-center gap-6">
       {/* Facebook */}
       <a
-        href="#"
+        href={siteConfig.facebook}
         aria-label="Facebook"
         className="text-figma-textMut transition hover:text-figma-header"
       >
@@ -31,7 +31,7 @@ const Footer = () => (
 
       {/* Instagram */}
       <a
-        href="#"
+        href={siteConfig.instgrame}
         aria-label="Instagram"
         className="text-figma-textMut transition hover:text-figma-header"
       >
@@ -50,7 +50,7 @@ const Footer = () => (
 
       {/* TikTok */}
       <a
-        href="#"
+        href={siteConfig.tiktok}
         aria-label="TikTok"
         className="text-figma-textMut transition hover:text-figma-header"
       >
@@ -58,11 +58,29 @@ const Footer = () => (
           <path d="M16.5 3a5.5 5.5 0 0 0 4.5 4.7V11a8.5 8.5 0 0 1-4.5-1.3v6.05A6.25 6.25 0 1 1 10.25 9.5c.26 0 .51.02.75.06v3.4a2.85 2.85 0 1 0 2.1 2.75V3h3.4Z" />
         </svg>
       </a>
+
+      {/* WhatsApp */}
+      <a
+        href={siteConfig.whatsapp}
+        aria-label="WhatsApp"
+        className="text-figma-textMut transition hover:text-figma-header"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          className="h-8 w-8"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+        >
+          <path d="M12 3a9 9 0 0 0-7.74 13.6L3 21l4.55-1.2A9 9 0 1 0 12 3z" />
+          <path d="M8.5 9.2c0 3 2.4 5.4 5.4 5.4.6 0 1.1-.5 1.1-1.1 0-.2-.1-.4-.2-.5l-1.1-.9c-.2-.2-.4-.2-.6-.1l-.6.4c-.9-.5-1.6-1.2-2.1-2.1l.4-.6c.1-.2.1-.5-.1-.6l-.9-1.1c-.1-.2-.3-.3-.5-.3-.6 0-1.1.5-1.1 1.1z" />
+        </svg>
+      </a>
     </div>
 
     {/* Copyright */}
     <p className="mt-6 font-tajawal text-sm text-figma-textMut">
-      © {new Date().getFullYear()} shosho clinic
+      © {new Date().getFullYear()} shimaa clinic
     </p>
   </footer>
 );

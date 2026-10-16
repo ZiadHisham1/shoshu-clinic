@@ -16,6 +16,12 @@ async function assertAdmin() {
 }
 
 /* ============================================================
+   Validation patterns
+   ============================================================ */
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const TIME_RE = /^\d{2}:\d{2}$/;
+
+/* ============================================================
    Generate slots in bulk
    ============================================================ */
 export interface GenerateInput {
@@ -29,84 +35,183 @@ export interface GenerateInput {
 }
 
 export async function generateSlots(input: GenerateInput) {
-  await assertAdmin();
+  try {
+    await assertAdmin();
 
-  const supabase = createAdminClient();
-
-  const slots: { service_id: string; start_at: string; end_at: string }[] = [];
-
-  const from = new Date(`${input.dateFrom}T00:00:00`);
-  const to = new Date(`${input.dateTo}T00:00:00`);
-
-  if (from > to) {
-    return { ok: false, error: "تاريخ البداية بعد تاريخ النهاية" };
-  }
-
-  const [startH, startM] = input.timeStart.split(":").map(Number);
-  const [endH, endM] = input.timeEnd.split(":").map(Number);
-  const durationMs = input.durationMinutes * 60 * 1000;
-
-  for (let d = new Date(from); d <= to; d.setDate(d.getDate() + 1)) {
-    // Skip weekends (Fri=5, Sat=6 for Egypt)
-    if (input.skipWeekends) {
-      const day = d.getDay();
-      if (day === 5 || day === 6) continue;
+    /* ── Validation ── */
+    if (!input?.serviceId) {
+      return { ok: false as const, error: "اختر الخدمة" };
+    }
+    if (!DATE_RE.test(input.dateFrom) || !DATE_RE.test(input.dateTo)) {
+      return { ok: false as const, error: "تنسيق التاريخ غير صحيح" };
+    }
+    if (!TIME_RE.test(input.timeStart) || !TIME_RE.test(input.timeEnd)) {
+      return { ok: false as const, error: "تنسيق الوقت غير صحيح" };
+    }
+    if (!Number.isFinite(input.durationMinutes) || input.durationMinutes <= 0) {
+      return { ok: false as const, error: "أدخل مدة صحيحة" };
     }
 
-    const dayStart = new Date(d);
-    dayStart.setHours(startH, startM, 0, 0);
-    const dayEnd = new Date(d);
-    dayEnd.setHours(endH, endM, 0, 0);
+    const from = new Date(`${input.dateFrom}T00:00:00`);
+    const to = new Date(`${input.dateTo}T00:00:00`);
 
-    for (let t = dayStart.getTime(); t + durationMs <= dayEnd.getTime(); t += durationMs) {
-      slots.push({
-        service_id: input.serviceId,
-        start_at: new Date(t).toISOString(),
-        end_at: new Date(t + durationMs).toISOString(),
+    if (isNaN(from.getTime()) || isNaN(to.getTime())) {
+      return { ok: false as const, error: "تاريخ غير صحيح" };
+    }
+    if (from > to) {
+      return { ok: false as const, error: "تاريخ البداية بعد تاريخ النهاية" };
+    }
+
+    const [startH, startM] = input.timeStart.split(":").map(Number);
+    const [endH, endM] = input.timeEnd.split(":").map(Number);
+
+    if ([startH, startM, endH, endM].some((n) => !Number.isFinite(n))) {
+      return { ok: false as const, error: "وقت غير صحيح" };
+    }
+
+    const durationMs = input.durationMinutes * 60 * 1000;
+
+    /* ── Build rows ── */
+    const rows: { service_id: string; start_at: string; end_at: string }[] = [];
+
+    for (let d = new Date(from); d <= to; d.setDate(d.getDate() + 1)) {
+      if (input.skipWeekends) {
+        const day = d.getDay();
+        if (day === 5 || day === 6) continue; // Fri/Sat
+      }
+
+      const dayStart = new Date(d);
+      dayStart.setHours(startH, startM, 0, 0);
+
+      const dayEnd = new Date(d);
+      dayEnd.setHours(endH, endM, 0, 0);
+
+      for (
+        let t = dayStart.getTime();
+        t + durationMs <= dayEnd.getTime();
+        t += durationMs
+      ) {
+        rows.push({
+          service_id: input.serviceId,
+          start_at: new Date(t).toISOString(),
+          end_at: new Date(t + durationMs).toISOString(),
+        });
+      }
+    }
+
+    if (rows.length === 0) {
+      return {
+        ok: false as const,
+        error: "لم يتم إنشاء أي مواعيد بهذه الإعدادات",
+      };
+    }
+
+    if (rows.length > 2000) {
+      return {
+        ok: false as const,
+        error: `عدد المواعيد كبير جداً (${rows.length}). قلل النطاق.`,
+      };
+    }
+
+    /* ── Insert in chunks ── */
+    const supabase = createAdminClient();
+    const CHUNK = 500;
+
+    for (let i = 0; i < rows.length; i += CHUNK) {
+      const chunk = rows.slice(i, i + CHUNK);
+      const { error } = await supabase.from("slots").upsert(chunk, {
+        onConflict: "service_id,start_at",
+        ignoreDuplicates: true,
       });
+
+      if (error) {
+        console.error("[generateSlots] chunk", i, error);
+        return { ok: false as const, error: error.message };
+      }
     }
+
+    revalidatePath("/admin/slots");
+    revalidatePath("/booking");
+
+    return { ok: true as const, inserted: rows.length };
+  } catch (e) {
+    console.error("[generateSlots] unexpected:", e);
+    return {
+      ok: false as const,
+      error: e instanceof Error ? e.message : "خطأ غير متوقع",
+    };
   }
+}
 
-  if (slots.length === 0) {
-    return { ok: false, error: "لم يتم إنشاء أي مواعيد بهذه الإعدادات" };
+/* ============================================================
+   Verify slots exist in DB for a range
+   ============================================================ */
+export async function verifySlots(input: {
+  serviceId: string;
+  dateFrom: string;
+  dateTo: string;
+}) {
+  try {
+    await assertAdmin();
+
+    if (!DATE_RE.test(input.dateFrom) || !DATE_RE.test(input.dateTo)) {
+      return { ok: false as const, error: "تنسيق التاريخ غير صحيح", count: 0 };
+    }
+
+    const fromIso = new Date(`${input.dateFrom}T00:00:00`).toISOString();
+    const toIso = new Date(`${input.dateTo}T23:59:59`).toISOString();
+
+    const supabase = createAdminClient();
+
+    const { count, error } = await supabase
+      .from("slots")
+      .select("*", { count: "exact", head: true })
+      .eq("service_id", input.serviceId)
+      .gte("start_at", fromIso)
+      .lte("start_at", toIso);
+
+    if (error) {
+      console.error("[verifySlots]", error);
+      return { ok: false as const, error: error.message, count: 0 };
+    }
+
+    return { ok: true as const, count: count ?? 0 };
+  } catch (e) {
+    console.error("[verifySlots] unexpected:", e);
+    return {
+      ok: false as const,
+      error: e instanceof Error ? e.message : "خطأ غير متوقع",
+      count: 0,
+    };
   }
-
-  const { error, count } = await supabase
-    .from("slots")
-    .upsert(slots, {
-      onConflict: "service_id,start_at",
-      ignoreDuplicates: true,
-      count: "exact",
-    });
-
-  if (error) {
-    console.error("[generateSlots]", error);
-    return { ok: false, error: error.message };
-  }
-
-  revalidatePath("/admin/slots");
-  revalidatePath("/booking");
-
-  return { ok: true, inserted: count ?? slots.length };
 }
 
 /* ============================================================
    Delete a single slot
    ============================================================ */
 export async function deleteSlot(slotId: string) {
-  await assertAdmin();
+  try {
+    await assertAdmin();
+    if (!slotId) return { ok: false as const, error: "معرف مفقود" };
 
-  const supabase = createAdminClient();
-  const { error } = await supabase.from("slots").delete().eq("id", slotId);
+    const supabase = createAdminClient();
+    const { error } = await supabase.from("slots").delete().eq("id", slotId);
 
-  if (error) {
-    console.error("[deleteSlot]", error);
-    return { ok: false, error: error.message };
+    if (error) {
+      console.error("[deleteSlot]", error);
+      return { ok: false as const, error: error.message };
+    }
+
+    revalidatePath("/admin/slots");
+    revalidatePath("/booking");
+    return { ok: true as const };
+  } catch (e) {
+    console.error("[deleteSlot] unexpected:", e);
+    return {
+      ok: false as const,
+      error: e instanceof Error ? e.message : "خطأ غير متوقع",
+    };
   }
-
-  revalidatePath("/admin/slots");
-  revalidatePath("/booking");
-  return { ok: true };
 }
 
 /* ============================================================
@@ -118,32 +223,44 @@ export async function deleteSlotsRange(input: {
   dateTo: string;
   onlyUnbooked: boolean;
 }) {
-  await assertAdmin();
+  try {
+    await assertAdmin();
 
-  const supabase = createAdminClient();
+    if (!DATE_RE.test(input.dateFrom) || !DATE_RE.test(input.dateTo)) {
+      return { ok: false as const, error: "تنسيق التاريخ غير صحيح" };
+    }
 
-  const fromIso = new Date(`${input.dateFrom}T00:00:00`).toISOString();
-  const toIso = new Date(`${input.dateTo}T23:59:59`).toISOString();
+    const fromIso = new Date(`${input.dateFrom}T00:00:00`).toISOString();
+    const toIso = new Date(`${input.dateTo}T23:59:59`).toISOString();
 
-  let query = supabase
-    .from("slots")
-    .delete()
-    .gte("start_at", fromIso)
-    .lte("start_at", toIso);
+    const supabase = createAdminClient();
 
-  if (input.serviceId) query = query.eq("service_id", input.serviceId);
-  if (input.onlyUnbooked) query = query.eq("is_booked", false);
+    let query = supabase
+      .from("slots")
+      .delete()
+      .gte("start_at", fromIso)
+      .lte("start_at", toIso);
 
-  const { error, count } = await query;
+    if (input.serviceId) query = query.eq("service_id", input.serviceId);
+    if (input.onlyUnbooked) query = query.eq("is_booked", false);
 
-  if (error) {
-    console.error("[deleteSlotsRange]", error);
-    return { ok: false, error: error.message };
+    const { error } = await query;
+
+    if (error) {
+      console.error("[deleteSlotsRange]", error);
+      return { ok: false as const, error: error.message };
+    }
+
+    revalidatePath("/admin/slots");
+    revalidatePath("/booking");
+    return { ok: true as const };
+  } catch (e) {
+    console.error("[deleteSlotsRange] unexpected:", e);
+    return {
+      ok: false as const,
+      error: e instanceof Error ? e.message : "خطأ غير متوقع",
+    };
   }
-
-  revalidatePath("/admin/slots");
-  revalidatePath("/booking");
-  return { ok: true, deleted: count ?? 0 };
 }
 
 /* ============================================================
@@ -154,61 +271,71 @@ export type BookingStatus = "confirmed" | "completed" | "cancelled";
 export async function updateBookingStatus(
   bookingId: string,
   status: BookingStatus
-): Promise<{ ok: true } | { ok: false; error: string }> {
-  await assertAdmin();
+) {
+  try {
+    await assertAdmin();
 
-  if (!bookingId) return { ok: false, error: "معرف الحجز مفقود" };
-  if (!["confirmed", "completed", "cancelled"].includes(status)) {
-    return { ok: false, error: "حالة غير صحيحة" };
-  }
-
-  const supabase = createAdminClient();
-
-  // If cancelling, free the slot so it becomes bookable again.
-  if (status === "cancelled") {
-    const { data: row } = await supabase
-      .from("bookings")
-      .select("slot_id")
-      .eq("id", bookingId)
-      .single();
-
-    if (row?.slot_id) {
-      await supabase
-        .from("slots")
-        .update({ is_booked: false })
-        .eq("id", row.slot_id);
+    if (!bookingId) {
+      return { ok: false as const, error: "معرف الحجز مفقود" };
     }
-  }
-
-  // If moving from cancelled back to confirmed/completed, re-lock the slot.
-  if (status === "confirmed" || status === "completed") {
-    const { data: row } = await supabase
-      .from("bookings")
-      .select("slot_id")
-      .eq("id", bookingId)
-      .single();
-
-    if (row?.slot_id) {
-      await supabase
-        .from("slots")
-        .update({ is_booked: true })
-        .eq("id", row.slot_id);
+    if (!["confirmed", "completed", "cancelled"].includes(status)) {
+      return { ok: false as const, error: "حالة غير صحيحة" };
     }
+
+    const supabase = createAdminClient();
+
+    // Cancelled → release the slot
+    if (status === "cancelled") {
+      const { data: row } = await supabase
+        .from("bookings")
+        .select("slot_id")
+        .eq("id", bookingId)
+        .single();
+
+      if (row?.slot_id) {
+        await supabase
+          .from("slots")
+          .update({ is_booked: false })
+          .eq("id", row.slot_id);
+      }
+    }
+
+    // Confirmed/completed → re-lock the slot
+    if (status === "confirmed" || status === "completed") {
+      const { data: row } = await supabase
+        .from("bookings")
+        .select("slot_id")
+        .eq("id", bookingId)
+        .single();
+
+      if (row?.slot_id) {
+        await supabase
+          .from("slots")
+          .update({ is_booked: true })
+          .eq("id", row.slot_id);
+      }
+    }
+
+    const { error } = await supabase
+      .from("bookings")
+      .update({ status })
+      .eq("id", bookingId);
+
+    if (error) {
+      console.error("[updateBookingStatus]", error);
+      return { ok: false as const, error: error.message };
+    }
+
+    revalidatePath("/admin/bookings");
+    revalidatePath("/admin/slots");
+    revalidatePath("/booking");
+
+    return { ok: true as const };
+  } catch (e) {
+    console.error("[updateBookingStatus] unexpected:", e);
+    return {
+      ok: false as const,
+      error: e instanceof Error ? e.message : "خطأ غير متوقع",
+    };
   }
-
-  const { error } = await supabase
-    .from("bookings")
-    .update({ status })
-    .eq("id", bookingId);
-
-  if (error) {
-    console.error("[updateBookingStatus]", error);
-    return { ok: false, error: error.message };
-  }
-
-  revalidatePath("/admin/bookings");
-  revalidatePath("/admin/slots");
-  revalidatePath("/booking");
-
-  return { ok: true };
 }

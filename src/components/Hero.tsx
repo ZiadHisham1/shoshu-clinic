@@ -38,8 +38,9 @@ export default function Hero() {
           {/* Tabs */}
           <div className="flex flex-wrap gap-2 sm:gap-3">
             {tabs.map((t) => (
-              <div
+              <a
                 key={t.id}
+                href="#services" 
                 className={[
                   "flex h-[42px] items-center justify-center rounded-[30px]",
                   "font-tajawal text-base font-extrabold text-figma-text sm:text-lg",
@@ -50,7 +51,7 @@ export default function Hero() {
                 ].join(" ")}
               >
                 {t.label}
-              </div>
+              </a>
             ))}
           </div>
         </div>

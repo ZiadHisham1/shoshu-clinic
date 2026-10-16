@@ -9,7 +9,7 @@ const Navbar = () => (
     >
       <Link
         href="/"
-        className="font-sacramento text-2xl leading-none text-figma-text sm:text-3xl lg:text-[35px]"
+        className="font-sacramento text-2xl font-bold leading-none text-white sm:text-3xl lg:text-[35px]"
       >
         shimaa clinic
       </Link>

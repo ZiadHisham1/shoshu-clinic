@@ -4,13 +4,13 @@ import { motion, useReducedMotion } from "motion/react";
 import { summaryReveal } from "@/lib/motion";
 import type { Service, Slot } from "./BookingFlow";
 
-export function BookingSummary({
-  service,
-  slot,
-}: {
+interface Props {
   service: Service;
   slot: Slot;
-}) {
+  onEdit?: () => void;
+}
+
+export function BookingSummary({ service, slot, onEdit }: Props) {
   const reduceMotion = useReducedMotion();
   const start = new Date(slot.start_at);
 
@@ -23,7 +23,7 @@ export function BookingSummary({
       className="fixed inset-x-0 bottom-0 z-50 border-t border-ink/10 bg-white/95 backdrop-blur-md"
     >
       <div className="mx-auto flex max-w-[1100px] items-center justify-between gap-4 px-4 py-3 sm:px-6">
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="truncate font-tajawal text-sm font-bold text-figma-text">
             {service.name}
           </p>
@@ -45,6 +45,16 @@ export function BookingSummary({
           <p className="shrink-0 font-tajawal text-lg font-extrabold text-figma-text">
             {service.price.toLocaleString("ar-EG")} ج.م
           </p>
+        )}
+
+        {onEdit && (
+          <button
+            type="button"
+            onClick={onEdit}
+            className="shrink-0 rounded-full bg-figma-tab/60 px-4 py-2 font-tajawal text-xs font-bold text-figma-header ring-1 ring-figma-header/20 transition hover:bg-figma-tab"
+          >
+            تعديل
+          </button>
         )}
       </div>
     </motion.div>

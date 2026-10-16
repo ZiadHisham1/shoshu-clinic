@@ -16,7 +16,11 @@ export const siteConfig = {
   description: "تخسيس، علاج طبيعي وحجامة — احجزي استشارتك الأولى مجاناً",
   // Placeholder: replace with the clinic's real WhatsApp / booking URL.
   bookingUrl: "/booking",
-  availability: "متاح 7 أيام في الأسبوع",
+  whatsapp: "https://wa.me/201126661822",
+  facebook: "https://www.facebook.com/shimaclinic",
+  tiktok: "https://www.tiktok.com/@user3920978815806",
+  instgrame: "https://www.instagram.com/drshimaclinic",
+  availability: "متاح 6 أيام في الأسبوع",
 };
 
 export const copy = {
