@@ -1,14 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useSupabase } from "@/lib/supabase/client";   // ← changed
+import { useMemo, useState } from "react";
+import { cn } from "@/lib/utils";
 import { BookingStatusBadge } from "./BookingStatusBadge";
 import { BookingRowActions } from "./BookingRowActions";
 import { BookingsFilters, type StatusFilter } from "./BookingsFilters";
-import { cn } from "@/lib/utils";
 
-type Status = "confirmed" | "cancelled" | "completed";
+export type Status = "confirmed" | "cancelled" | "completed";
 
 export interface Booking {
   id: string;
@@ -32,27 +30,6 @@ export function BookingsTable({ initialBookings }: Props) {
   const [bookings, setBookings] = useState<Booking[]>(initialBookings);
   const [status, setStatus] = useState<StatusFilter>("all");
   const [search, setSearch] = useState("");
-  const [newIds, setNewIds] = useState<Set<string>>(new Set());
-  const router = useRouter();
-  const supabase = useSupabase();   // ← changed
-
-  /* ── Realtime subscription ── */
-  useEffect(() => {
-    const channel = supabase
-      .channel("bookings-admin-feed")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "bookings" },
-        async (payload) => {
-          // ...(unchanged)
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [supabase]);
 
   /* ── Filtering ── */
   const filtered = useMemo(() => {
@@ -67,7 +44,7 @@ export function BookingsTable({ initialBookings }: Props) {
     });
   }, [bookings, status, search]);
 
-  /* ── Counts for filter tabs ── */
+  /* ── Counts ── */
   const counts = useMemo(
     () => ({
       all: bookings.length,
@@ -80,12 +57,9 @@ export function BookingsTable({ initialBookings }: Props) {
 
   function handleUpdated(id: string, newStatus: Status) {
     setBookings((prev) =>
-        prev.map((b) => (b.id === id ? { ...b, status: newStatus } : b))
+      prev.map((b) => (b.id === id ? { ...b, status: newStatus } : b))
     );
-
-    // Refresh the underlying server data (frees slot if cancelled)
-    router.refresh();
-    }
+  }
 
   return (
     <div className="space-y-4">
@@ -98,7 +72,7 @@ export function BookingsTable({ initialBookings }: Props) {
       />
 
       {filtered.length === 0 ? (
-        <div className="py-16 text-center">
+        <div className="rounded-2xl bg-white p-12 text-center ring-1 ring-ink/10">
           <p className="font-lalezar text-ink/50">
             {bookings.length === 0
               ? "لا توجد حجوزات حتى الآن"
@@ -106,51 +80,45 @@ export function BookingsTable({ initialBookings }: Props) {
           </p>
         </div>
       ) : (
-        <div className="rounded-2xl bg-white ring-1 ring-ink/5 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-cream-50 text-ink/60 font-lalezar text-xs">
-                <th className="text-start px-4 py-3">العميل</th>
-                <th className="text-start px-4 py-3">الخدمة</th>
-                <th className="text-start px-4 py-3">الموعد</th>
-                <th className="text-start px-4 py-3 hidden md:table-cell">
-                  رقم الهاتف
-                </th>
-                <th className="text-start px-4 py-3">الحالة</th>
-                <th className="text-start px-4 py-3 hidden lg:table-cell">
-                  تم الإنشاء
-                </th>
-                <th className="w-10 px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-ink/5">
-              {filtered.map((b) => {
-                const isNew = newIds.has(b.id);
-                return (
-                  <tr
-                    key={b.id}
-                    className={cn(
-                      "transition-colors",
-                      isNew
-                        ? "bg-emerald-50/60 animate-pulse-slow"
-                        : "hover:bg-cream-50/60"
-                    )}
-                  >
+        <>
+          {/* ═══════════ MOBILE — Cards ═══════════ */}
+          <div className="space-y-3 lg:hidden">
+            {filtered.map((b) => (
+              <MobileBookingCard
+                key={b.id}
+                booking={b}
+                onUpdated={handleUpdated}
+              />
+            ))}
+          </div>
+
+          {/* ═══════════ DESKTOP — Table ═══════════ */}
+          <div className="hidden overflow-hidden rounded-2xl bg-white ring-1 ring-ink/10 lg:block">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-cream-50 text-start font-lalezar text-xs text-ink/60">
+                  <th className="px-4 py-3 text-start">العميل</th>
+                  <th className="px-4 py-3 text-start">الخدمة</th>
+                  <th className="px-4 py-3 text-start">الموعد</th>
+                  <th className="px-4 py-3 text-start">الهاتف</th>
+                  <th className="px-4 py-3 text-start">الحالة</th>
+                  <th className="w-10 px-4 py-3" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-ink/5">
+                {filtered.map((b) => (
+                  <tr key={b.id} className="transition-colors hover:bg-cream-50/60">
                     <td className="px-4 py-3">
-                      <p className="font-lalezar text-ink">
-                        {b.customer_name}
-                      </p>
+                      <p className="font-lalezar text-ink">{b.customer_name}</p>
                       {b.notes && (
-                        <p className="text-xs text-ink/50 truncate max-w-[200px]">
+                        <p className="max-w-[220px] truncate text-xs text-ink/50">
                           {b.notes}
                         </p>
                       )}
                     </td>
-
                     <td className="px-4 py-3 font-lalezar text-ink/80">
                       {b.slot?.service?.name ?? "—"}
                     </td>
-
                     <td className="px-4 py-3">
                       <p className="font-lalezar text-ink">
                         {formatDate(b.slot?.start_at)}
@@ -160,25 +128,18 @@ export function BookingsTable({ initialBookings }: Props) {
                         {formatTime(b.slot?.end_at)}
                       </p>
                     </td>
-
-                    <td className="px-4 py-3 font-lalezar text-ink/70 hidden md:table-cell">
+                    <td className="px-4 py-3">
                       <a
                         href={`tel:${b.customer_phone}`}
-                        className="hover:text-primary"
                         dir="ltr"
+                        className="font-lalezar text-ink/70 hover:text-figma-header"
                       >
                         {b.customer_phone}
                       </a>
                     </td>
-
                     <td className="px-4 py-3">
                       <BookingStatusBadge status={b.status} />
                     </td>
-
-                    <td className="px-4 py-3 text-xs text-ink/50 hidden lg:table-cell">
-                      {formatDate(b.created_at)}
-                    </td>
-
                     <td className="px-4 py-3">
                       <BookingRowActions
                         bookingId={b.id}
@@ -187,17 +148,95 @@ export function BookingsTable({ initialBookings }: Props) {
                       />
                     </td>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
     </div>
   );
 }
 
-/* ── Formatting helpers ── */
+/* ============================================================
+   Mobile booking card
+   ============================================================ */
+function MobileBookingCard({
+  booking: b,
+  onUpdated,
+}: {
+  booking: Booking;
+  onUpdated: (id: string, status: Status) => void;
+}) {
+  return (
+    <div className="rounded-2xl bg-white p-4 ring-1 ring-ink/10">
+      {/* Header row: name + status + actions */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-lalezar text-base font-bold text-ink">
+            {b.customer_name}
+          </p>
+          <p className="font-lalezar text-xs text-ink/60">
+            {b.slot?.service?.name ?? "—"}
+          </p>
+        </div>
+        <BookingRowActions
+          bookingId={b.id}
+          currentStatus={b.status}
+          onUpdated={onUpdated}
+        />
+      </div>
+
+      {/* Status */}
+      <div className="mt-2">
+        <BookingStatusBadge status={b.status} />
+      </div>
+
+      {/* Details grid */}
+      <div className="mt-3 space-y-2 rounded-xl bg-cream-50 p-3">
+        <Row
+          label="الموعد"
+          value={
+            b.slot
+              ? `${formatDate(b.slot.start_at)} • ${formatTime(b.slot.start_at)}`
+              : "—"
+          }
+        />
+        <Row
+          label="الهاتف"
+          value={
+            <a
+              href={`tel:${b.customer_phone}`}
+              dir="ltr"
+              className="text-figma-header"
+            >
+              {b.customer_phone}
+            </a>
+          }
+        />
+        {b.notes && <Row label="ملاحظات" value={b.notes} />}
+        <Row label="تم الحجز" value={formatDate(b.created_at)} />
+      </div>
+    </div>
+  );
+}
+
+function Row({
+  label,
+  value,
+}: {
+  label: string;
+  value: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-3 font-lalezar text-sm">
+      <span className="shrink-0 text-ink/60">{label}</span>
+      <span className="min-w-0 break-words text-end text-ink">{value}</span>
+    </div>
+  );
+}
+
+/* ─── Helpers ─── */
 function formatDate(iso?: string | null): string {
   if (!iso) return "—";
   return new Date(iso).toLocaleDateString("ar-EG", {

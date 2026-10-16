@@ -16,7 +16,7 @@ export const siteConfig = {
   description: "تخسيس، علاج طبيعي وحجامة — احجزي استشارتك الأولى مجاناً",
   // Placeholder: replace with the clinic's real WhatsApp / booking URL.
   bookingUrl: "/booking",
-  whatsapp: "https://wa.me/201126661822",
+  whatsapp: "201126661822",
   facebook: "https://www.facebook.com/shimaclinic",
   tiktok: "https://www.tiktok.com/@user3920978815806",
   instgrame: "https://www.instagram.com/drshimaclinic",

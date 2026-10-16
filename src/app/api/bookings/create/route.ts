@@ -14,7 +14,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // Try to attach the Clerk user ID if signed in
     const { getToken } = await auth();
     const token = await getToken({ template: "supabase" }).catch(() => null);
 
@@ -28,6 +27,7 @@ export async function POST(req: Request) {
       }
     );
 
+    // 1. Create the booking via RPC
     const { data, error } = await supabase.rpc("book_slot", {
       p_slot_id: slot_id,
       p_customer_name: customer_name,
@@ -56,12 +56,46 @@ export async function POST(req: Request) {
       );
     }
 
-    return NextResponse.json({ booking: data });
-  } catch (e: any) {
+    // 2. Re-fetch with joins so we can build a rich WhatsApp message
+    const bookingId = (data as { id: string }).id;
+
+    const { data: enriched } = await supabase
+      .from("bookings")
+      .select(
+        `id, customer_name, customer_phone, notes,
+         slot:slots ( start_at, end_at, service:services (name) )`
+      )
+      .eq("id", bookingId)
+      .single();
+
+    // 3. Flatten Supabase's array-wrapped joins
+    const slot = Array.isArray(enriched?.slot)
+      ? enriched?.slot[0] ?? null
+      : enriched?.slot ?? null;
+
+    const service = slot
+      ? Array.isArray(slot.service)
+        ? slot.service[0] ?? null
+        : slot.service
+      : null;
+
+    return NextResponse.json({
+      booking: {
+        id: bookingId,
+        customer_name: enriched?.customer_name ?? customer_name,
+        customer_phone: enriched?.customer_phone ?? customer_phone,
+        notes: enriched?.notes ?? notes ?? null,
+        start_at: slot?.start_at ?? null,
+        end_at: slot?.end_at ?? null,
+        service_name: service?.name ?? null,
+      },
+    });
+  } catch (e) {
     console.error("[bookings/create] failed:", e);
+    const message = e instanceof Error ? e.message : "خطأ غير متوقع";
     return NextResponse.json(
-      { error: "SERVER_ERROR", message: e?.message ?? "خطأ غير متوقع" },
+      { error: "SERVER_ERROR", message },
       { status: 500 }
     );
   }
-}
+} 

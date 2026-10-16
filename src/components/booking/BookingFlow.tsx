@@ -9,6 +9,8 @@ import { MonthSlotPicker } from "./MonthSlotPicker";
 import { DetailsStep } from "./DetailsStep";
 import { BookingSummary } from "./BookingSummary";
 import { digitsOnly, isValidEgPhone } from "@/lib/phone";
+import { buildWhatsAppUrl } from "@/lib/whatsapp";
+import { siteConfig } from "@/lib/constants";
 import { stepFade } from "@/lib/motion";
 
 export interface Service {
@@ -46,23 +48,14 @@ export function BookingFlow({ services, slots }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // ✅ Declare derived value FIRST
   const serviceSlots = service
     ? slots.filter((s) => s.service_id === service.id)
     : [];
 
-  // ✅ useEffect can now safely reference serviceSlots
   useEffect(() => {
     console.log("[BookingFlow] total slots:", slots.length);
     console.log("[BookingFlow] service slots:", serviceSlots.length);
-    if (service) {
-      console.log("[BookingFlow] selected service:", service.name);
-      const dates = Array.from(
-        new Set(serviceSlots.map((s) => s.start_at.slice(0, 10)))
-      );
-      console.log("[BookingFlow] available dates:", dates.length, dates);
-    }
-  }, [slots.length, serviceSlots.length, service]);
+  }, [slots.length, serviceSlots.length]);
 
   const phoneDigits = digitsOnly(phone);
   const canSubmit =
@@ -106,7 +99,23 @@ export function BookingFlow({ services, slots }: Props) {
         return;
       }
 
-      router.push(`/booking/${data.booking.id}`);
+      // ⬇️ Open WhatsApp in a new tab with pre-filled booking message
+      const booking = data.booking;
+      const waUrl = buildWhatsAppUrl({
+        bookingId: booking.id,
+        customerName: booking.customer_name,
+        customerPhone: booking.customer_phone,
+        serviceName: booking.service_name ?? service.name,
+        startAt: booking.start_at ?? slot.start_at,
+        notes: booking.notes,
+        clinicPhone: siteConfig.whatsapp,
+      });
+
+      // Open WhatsApp in a new tab (keeps confirmation page accessible via back)
+      window.open(waUrl, "_blank", "noopener,noreferrer");
+
+      // Then navigate to confirmation page
+      router.push(`/booking/${booking.id}`);
     } catch (e) {
       setError((e as Error).message ?? "حدث خطأ غير متوقع");
       setSubmitting(false);
@@ -182,7 +191,7 @@ export function BookingFlow({ services, slots }: Props) {
       {/* Main card */}
       <div className="rounded-3xl bg-figma-tab/60 p-3 ring-1 ring-ink/10 sm:p-5 lg:p-6">
         <AnimatePresence mode="wait" initial={false}>
-          {/* STEP 1 — Service */}
+          {/* STEP 1 */}
           {step === 1 && (
             <motion.div
               key="step-1"
@@ -253,7 +262,7 @@ export function BookingFlow({ services, slots }: Props) {
             </motion.div>
           )}
 
-          {/* STEP 2 — Date & time */}
+          {/* STEP 2 */}
           {step === 2 && (
             <motion.div
               key="step-2"
@@ -293,7 +302,7 @@ export function BookingFlow({ services, slots }: Props) {
             </motion.div>
           )}
 
-          {/* STEP 3 — Details & confirm */}
+          {/* STEP 3 */}
           {step === 3 && service && slot && (
             <motion.div
               key="step-3"
