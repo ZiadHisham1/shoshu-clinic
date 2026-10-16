@@ -30,7 +30,7 @@ export default function AdminLayout({
             >
               العودة للموقع
             </Link>
-            <UserButton afterSignOutUrl="/sign-in" />
+            <UserButton />
           </div>
         </div>
 
