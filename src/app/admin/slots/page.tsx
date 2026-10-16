@@ -37,7 +37,18 @@ export default async function AdminSlotsPage() {
   }
 
   const services = servicesRes.data ?? [];
-  const slots = slotsRes.data ?? [];
+
+  // ⬇️ Flatten Supabase's array-wrapped join into a single object
+  const slots = (slotsRes.data ?? []).map((s) => ({
+    id: s.id,
+    service_id: s.service_id,
+    start_at: s.start_at,
+    end_at: s.end_at,
+    is_booked: s.is_booked,
+    service: Array.isArray(s.service)
+      ? s.service[0] ?? null
+      : s.service,
+  }));
 
   // ─── Compute coverage per service ───
   const now = Date.now();
@@ -109,7 +120,6 @@ export default async function AdminSlotsPage() {
             {coverage.map((c) => {
               const ok = c.daysAhead >= 30;
               const warn = c.daysAhead >= 14 && c.daysAhead < 30;
-              const bad = c.daysAhead < 14;
               return (
                 <div
                   key={c.svc.id}
@@ -152,4 +162,4 @@ export default async function AdminSlotsPage() {
       </div>
     </main>
   );
-}
+} 
