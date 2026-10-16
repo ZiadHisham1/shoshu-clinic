@@ -1,4 +1,5 @@
 import { siteConfig } from "@/lib/constants";
+import Image from "next/image";
 
 const Footer = () => (
   <footer className="mt-12 w-full py-10 pb-28 text-center lg:pb-10">
@@ -12,9 +13,16 @@ const Footer = () => (
     </div>
 
     {/* Logo */}
-    <p className="mt-6 font-sacramento text-4xl text-figma-footer sm:text-5xl">
-      Shimaa clinic
-    </p>
+    <div className="mt-6 flex justify-center items-center font-sacramento text-4xl text-figma-footer sm:text-5xl">
+       <Image
+          src="/logo.png"
+          alt="Logo"
+          width={300}
+          height={88}
+          className="h-24 w-auto sm:h-10 lg:h-12"
+          priority
+        />
+    </div>
 
     {/* Socials — inline SVG (brand icons removed from lucide-react) */}
     <div className="mt-6 flex items-center justify-center gap-6">
