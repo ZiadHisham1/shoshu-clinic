@@ -23,12 +23,6 @@ const config: CapacitorConfig = {
       showSpinner: false,
     },
   },
-  server: {
-  url: 'https://your-app.vercel.app',  // ← must be live, not localhost
-  cleartext: false,
-  androidScheme: 'https',
-  iosScheme: 'https',
-},
 };
 
 export default config;

@@ -1,8 +1,27 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',
-  images: { unoptimized: true }, // required — Capacitor can't run Next image optimizer
-  trailingSlash: true,           // helps with routing on file://
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "yiagmbpjrxbxbnvfedjd.supabase.co",
+        pathname: "/storage/v1/object/public/**",
+      },
+    ],
+  },
+  async headers() {
+    return [
+      {
+        source: "/videos/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
+    ];
+  },
 };
 
 module.exports = nextConfig;
