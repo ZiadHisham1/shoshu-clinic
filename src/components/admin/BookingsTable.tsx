@@ -93,7 +93,7 @@ export function BookingsTable({ initialBookings }: Props) {
           </div>
 
           {/* ═══════════ DESKTOP — Table ═══════════ */}
-          <div className="hidden overflow-hidden rounded-2xl bg-white ring-1 ring-ink/10 lg:block">
+          <div className="hidden  rounded-2xl bg-white ring-1 ring-ink/10 lg:block">
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-cream-50 text-start font-lalezar text-xs text-ink/60">
@@ -170,7 +170,6 @@ function MobileBookingCard({
 }) {
   return (
     <div className="rounded-2xl bg-white p-4 ring-1 ring-ink/10">
-      {/* Header row: name + status + actions */}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <p className="truncate font-lalezar text-base font-bold text-ink">
@@ -187,12 +186,10 @@ function MobileBookingCard({
         />
       </div>
 
-      {/* Status */}
       <div className="mt-2">
         <BookingStatusBadge status={b.status} />
       </div>
 
-      {/* Details grid */}
       <div className="mt-3 space-y-2 rounded-xl bg-cream-50 p-3">
         <Row
           label="الموعد"
