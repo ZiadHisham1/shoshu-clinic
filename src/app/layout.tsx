@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Cairo, Tajawal, Sacramento } from "next/font/google";
 import { siteConfig } from "@/lib/constants";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 const cairo = Cairo({
@@ -54,6 +55,7 @@ const RootLayout = ({ children }: Props) => (
         className={`${cairo.variable} ${tajawal.variable} ${sacramento.variable} bg-figma-page font-sans text-figma-text antialiased`}
       >
         {children}
+        <Analytics />
       </body>
     </html>
   </ClerkProvider>
