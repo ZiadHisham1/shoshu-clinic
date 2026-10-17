@@ -26,6 +26,8 @@ export interface Slot {
   start_at: string;
   end_at: string;
   is_booked: boolean;
+  /** Computed server-side: true if booked OR overlaps another booking */
+  is_blocked?: boolean;
 }
 
 type Step = 1 | 2 | 3;

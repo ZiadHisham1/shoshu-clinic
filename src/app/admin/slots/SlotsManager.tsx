@@ -24,6 +24,8 @@ export interface Slot {
   end_at: string;
   is_booked: boolean;
   service: { name: string } | null;
+  is_blocked?: boolean;
+  
 }
 
 interface Props {
@@ -52,7 +54,8 @@ export function SlotsManager({ services, initialSlots }: Props) {
   const [timeStart, setTimeStart] = useState("10:00");
   const [timeEnd, setTimeEnd] = useState("18:00");
   const [duration, setDuration] = useState(30);
-  const [skipWeekends, setSkipWeekends] = useState(true);
+  // ← NEW: default false = Saturdays are allowed
+  const [skipSaturday, setSkipSaturday] = useState(false);
 
   /* ── Set date defaults AFTER mount (client-only) ── */
   useEffect(() => {
@@ -80,7 +83,7 @@ export function SlotsManager({ services, initialSlots }: Props) {
       timeStart,
       timeEnd,
       durationMinutes: duration,
-      skipWeekends,
+      skipSaturday,
     };
 
     startTransition(async () => {
@@ -125,7 +128,7 @@ export function SlotsManager({ services, initialSlots }: Props) {
             timeStart,
             timeEnd,
             durationMinutes: svc.duration_minutes || duration,
-            skipWeekends,
+            skipSaturday,
           });
           if (res.ok) {
             totalInserted += res.inserted ?? 0;
@@ -302,14 +305,15 @@ export function SlotsManager({ services, initialSlots }: Props) {
           />
         </div>
 
+        {/* Skip Saturday — unchecked by default */}
         <label className="flex items-center gap-2 text-sm font-lalezar text-ink/70">
           <input
             type="checkbox"
-            checked={skipWeekends}
-            onChange={(e) => setSkipWeekends(e.target.checked)}
+            checked={skipSaturday}
+            onChange={(e) => setSkipSaturday(e.target.checked)}
             className="w-4 h-4 rounded"
           />
-          تجاهل أيام الجمعة والسبت
+          تجاهل يوم السبت (استثناء — الجمعة متوقف دائماً)
         </label>
 
         {/* Actions */}

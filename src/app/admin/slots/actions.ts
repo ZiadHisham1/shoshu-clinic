@@ -26,12 +26,13 @@ const TIME_RE = /^\d{2}:\d{2}$/;
    ============================================================ */
 export interface GenerateInput {
   serviceId: string;
-  dateFrom: string;   // YYYY-MM-DD
-  dateTo: string;     // YYYY-MM-DD
-  timeStart: string;  // HH:MM (24h)
-  timeEnd: string;    // HH:MM
+  dateFrom: string;
+  dateTo: string;
+  timeStart: string;
+  timeEnd: string;
   durationMinutes: number;
-  skipWeekends: boolean;
+  /** If true, Saturdays are skipped. Fridays are always skipped. */
+  skipSaturday: boolean;
 }
 
 export async function generateSlots(input: GenerateInput) {
@@ -75,10 +76,11 @@ export async function generateSlots(input: GenerateInput) {
     const rows: { service_id: string; start_at: string; end_at: string }[] = [];
 
     for (let d = new Date(from); d <= to; d.setDate(d.getDate() + 1)) {
-      if (input.skipWeekends) {
-        const day = d.getDay();
-        if (day === 5 || day === 6) continue; // Fri/Sat
-      }
+      // Friday is always skipped (weekend)  
+      if (d.getDay() === 5) continue;
+
+      // Saturday is allowed by default; only skipped if explicitly requested
+      if (input.skipSaturday && d.getDay() === 6) continue;
 
       const dayStart = new Date(d);
       dayStart.setHours(startH, startM, 0, 0);

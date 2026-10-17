@@ -14,10 +14,19 @@ export default async function BookingPage() {
     .order("name");
 
   if (servicesError) {
-    return <ErrorScreen message={servicesError.message} />;
+    return (
+      <main className="min-h-screen grid place-items-center bg-figma-page px-4">
+        <div className="text-center space-y-2">
+          <h1 className="font-tajawal text-2xl font-extrabold text-figma-text">
+            تعذر تحميل بيانات الحجز
+          </h1>
+          <p className="text-sm text-figma-textMut">{servicesError.message}</p>
+        </div>
+      </main>
+    );
   }
 
-  // ─── Slots — paginated to bypass the 1000-row default ───
+  // ─── All slots (booked + free) — paginated ───
   const PAGE_SIZE = 1000;
   const MAX_SLOTS = 10000;
   const allSlots: {
@@ -35,7 +44,6 @@ export default async function BookingPage() {
     const { data, error } = await supabase
       .from("slots")
       .select("id, service_id, start_at, end_at, is_booked")
-      .eq("is_booked", false)
       .gte("start_at", now.toISOString())
       .lte("start_at", in90Days.toISOString())
       .order("start_at", { ascending: true })
@@ -43,34 +51,76 @@ export default async function BookingPage() {
 
     if (error) {
       console.error("[booking] slot fetch error:", error);
-      return <ErrorScreen message={error.message} />;
+      return (
+        <main className="min-h-screen grid place-items-center bg-figma-page px-4">
+          <div className="text-center space-y-2">
+            <h1 className="font-tajawal text-2xl font-extrabold text-figma-text">
+              تعذر تحميل بيانات الحجز
+            </h1>
+            <p className="text-sm text-figma-textMut">{error.message}</p>
+          </div>
+        </main>
+      );
     }
 
     if (!data || data.length === 0) break;
-
     allSlots.push(...data);
-
-    if (data.length < PAGE_SIZE) break; // last page
+    if (data.length < PAGE_SIZE) break;
   }
 
-  console.log(`[booking] loaded ${allSlots.length} slots`);
+  // ─── Fetch active bookings to mark overlapping slots ───
+  const { data: activeBookings } = await supabase
+    .from("bookings")
+    .select(
+      `id, status,
+       slot:slots ( start_at, service:services ( duration_minutes ) )`
+    )
+    .in("status", ["confirmed", "completed"]);
+
+  // Build list of blocked ranges
+  const blockedRanges = (activeBookings ?? [])
+    .map((b) => {
+      const slot = Array.isArray(b.slot) ? b.slot[0] : b.slot;
+      if (!slot) return null;
+      const service = Array.isArray(slot.service)
+        ? slot.service[0]
+        : slot.service;
+      const duration = service?.duration_minutes ?? 0;
+      const start = new Date(slot.start_at).getTime();
+      const end = start + duration * 60 * 1000;
+      return { start, end };
+    })
+    .filter((r): r is { start: number; end: number } => r !== null);
+
+  // Mark each slot as "blocked" if it overlaps a booking (even if the slot itself is unbooked)
+  const slotsWithAvailability = allSlots.map((s) => {
+    const start = new Date(s.start_at).getTime();
+    const end = new Date(s.end_at).getTime();
+    const overlaps = blockedRanges.some(
+      (r) => start < r.end && end > r.start
+    );
+    return {
+      ...s,
+      is_blocked: s.is_booked || overlaps,
+    };
+  });
+
+  const availableCount = slotsWithAvailability.filter(
+    (s) => !s.is_blocked
+  ).length;
+
+  console.log(
+    `[booking] loaded ${allSlots.length} slots, ${availableCount} available, ${
+      allSlots.length - availableCount
+    } blocked`
+  );
 
   return (
     <main className="min-h-screen bg-figma-page pb-24" dir="rtl">
-      <BookingFlow services={services ?? []} slots={allSlots} />
-    </main>
-  );
-}
-
-function ErrorScreen({ message }: { message: string }) {
-  return (
-    <main className="min-h-screen grid place-items-center bg-figma-page px-4">
-      <div className="text-center space-y-2">
-        <h1 className="font-tajawal text-2xl font-extrabold text-figma-text">
-          تعذر تحميل بيانات الحجز
-        </h1>
-        <p className="text-sm text-figma-textMut">{message}</p>
-      </div>
+      <BookingFlow
+        services={services ?? []}
+        slots={slotsWithAvailability}
+      />
     </main>
   );
 }
