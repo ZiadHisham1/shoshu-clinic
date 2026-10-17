@@ -244,10 +244,10 @@ export function BookingFlow({ services, slots }: Props) {
                           <p className="truncate font-tajawal text-base font-bold text-figma-text">
                             {s.name}
                           </p>
-                          <p className="mt-1 font-tajawal text-xs text-figma-textMut">
+                          <p className="mt-1 font-tajawal font-bold text-s text-figma-textMut">
                             {s.duration_minutes} دقيقة
                             {s.price
-                              ? ` • ${s.price.toLocaleString("ar-EG")} ج.م`
+                              ? ` | ${s.price.toLocaleString("ar-EG")} جنيه . مصري`
                               : ""}
                           </p>
                         </div>
