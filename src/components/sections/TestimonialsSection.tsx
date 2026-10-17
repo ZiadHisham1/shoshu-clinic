@@ -18,16 +18,18 @@ const TestimonialsSection = ({ reviews }: Props) => {
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
   const total = reviews.length;
-
-  // Nothing to show — render nothing
   if (total === 0) return null;
 
-  // Guard against stale index when reviews list shrinks
   const safeIndex = Math.min(index, total - 1);
   const current = reviews[safeIndex];
 
   const prev = () => setIndex((i) => (i - 1 + total) % total);
   const next = () => setIndex((i) => (i + 1) % total);
+
+  const openLightbox = (i: number) => {
+    setIndex(i);
+    setLightboxOpen(true);
+  };
 
   return (
     <>
@@ -39,28 +41,29 @@ const TestimonialsSection = ({ reviews }: Props) => {
                 اراء العملاء
               </h2>
 
-              {/* ═══════════ Desktop / tablet: grid ═══════════ */}
-              <div className="hidden gap-4 sm:grid sm:grid-cols-2 lg:grid-cols-3">
-                {reviews.map((review, i) => (
-                  <button
-                    key={review.id}
-                    type="button"
-                    onClick={() => {
-                      setIndex(i);
-                      setLightboxOpen(true);
-                    }}
-                    className="group relative h-[280px] overflow-hidden rounded-[20px] border border-black/10 bg-white transition hover:-translate-y-0.5 hover:shadow-[0_12px_30px_-10px_rgba(251,111,146,0.4)] sm:h-[320px] lg:h-[360px]"
-                    aria-label={`افتح صورة رأي العميل ${i + 1}`}
-                  >
-                    <Image
-                      src={review.image}
-                      alt={`رأي عميل ${i + 1}`}
-                      fill
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                      className="object-contain p-3 transition group-hover:scale-[1.02]"
-                    />
-                  </button>
-                ))}
+              {/* ═══════════ Desktop / tablet: horizontal scroller ═══════════ */}
+              <div className="hidden sm:block">
+                <div className="-mx-6 overflow-x-auto px-6 pb-3">
+                  <div className="flex gap-4">
+                    {reviews.map((review, i) => (
+                      <button
+                        key={review.id}
+                        type="button"
+                        onClick={() => openLightbox(i)}
+                        className="group relative h-[360px] w-[240px] shrink-0 overflow-hidden rounded-[20px] border border-black/10 bg-white transition hover:-translate-y-0.5 hover:shadow-[0_12px_30px_-10px_rgba(251,111,146,0.4)] lg:w-[280px]"
+                        aria-label={`افتح صورة رأي العميل ${i + 1}`}
+                      >
+                        <Image
+                          src={review.image}
+                          alt={`رأي عميل ${i + 1}`}
+                          fill
+                          sizes="280px"
+                          className="object-contain p-3 transition group-hover:scale-[1.02]"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               {/* ═══════════ Mobile: single-card carousel ═══════════ */}
@@ -80,7 +83,6 @@ const TestimonialsSection = ({ reviews }: Props) => {
                   />
                 </button>
 
-                {/* Dots + arrows */}
                 {total > 1 && (
                   <div className="mt-4 flex items-center justify-between">
                     <button
@@ -125,7 +127,7 @@ const TestimonialsSection = ({ reviews }: Props) => {
         </AnimatedContainer>
       </section>
 
-      {/* ═══════════ Lightbox ═══════════ */}
+      {/* ═══════════ Lightbox (unchanged) ═══════════ */}
       {lightboxOpen && (
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm"
