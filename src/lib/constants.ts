@@ -11,10 +11,34 @@ import {
 } from "lucide-react";
 import type { PhysioCondition, ServiceCategory } from "@/types";
 
+/* ============================================================
+   Supabase Storage helpers
+   ============================================================ */
+
+const STORAGE_BASE = process.env.NEXT_PUBLIC_SUPABASE_STORAGE_URL;
+const VIDEO_BASE = process.env.NEXT_PUBLIC_SUPABASE_VIDEO_URL;
+
+/** Public URL for an image in the `site-images` bucket. Falls back to /img/... */
+export function imageUrl(path: string): string {
+  const clean = path.replace(/^\/+/, "");
+  if (!STORAGE_BASE) return `/img/${clean}`;
+  return `${STORAGE_BASE}/${clean}`;
+}
+
+/** Public URL for a video in the `tiktok-videos` bucket. Falls back to /videos/... */
+export function videoUrl(path: string): string {
+  const clean = path.replace(/^\/+/, "");
+  if (!VIDEO_BASE) return `/videos/${clean}`;
+  return `${VIDEO_BASE}/${clean}`;
+}
+
+/* ============================================================
+   Site config
+   ============================================================ */
+
 export const siteConfig = {
   name: "شوشو كلينك",
   description: "تخسيس، علاج طبيعي وحجامة — احجزي استشارتك الأولى مجاناً",
-  // Placeholder: replace with the clinic's real WhatsApp / booking URL.
   bookingUrl: "/booking",
   whatsapp: "201126661822",
   facebook: "https://www.facebook.com/shimaclinic",
@@ -22,6 +46,10 @@ export const siteConfig = {
   instgrame: "https://www.instagram.com/drshimaclinic",
   availability: "متاح 6 أيام في الأسبوع",
 };
+
+/* ============================================================
+   Copy
+   ============================================================ */
 
 export const copy = {
   heroLines: ["خسي بصحة...", "و ريحي بجسمك"],
@@ -39,13 +67,21 @@ export const copy = {
   tabsLabel: "فئات الخدمات",
 };
 
+/* ============================================================
+   Physio conditions
+   ============================================================ */
+
 export const physioConditions: PhysioCondition[] = [
   { id: "back", label: "فقرات الظهر", icon: Activity },
   { id: "neck", label: "الفقرات العنقية", icon: PersonStanding },
   { id: "knee", label: "خشونة الركبة", icon: Bone },
-  { id: "lumbar", label: "القطاني", icon: Accessibility },
+  { id: "lumbar", label: "القطانية", icon: Accessibility },
   { id: "chronic", label: "الألم المزمن", icon: Zap },
 ];
+
+/* ============================================================
+   Service categories
+   ============================================================ */
 
 export const serviceCategories: ServiceCategory[] = [
   {
@@ -58,8 +94,8 @@ export const serviceCategories: ServiceCategory[] = [
         subtitle: "بديل تكميم، جوفي، منجارو، ريتا",
         icon: Syringe,
         description:
-          "حقن آمنة وفعّالة لإنقاص الوزن تحت إشراف طبي كامل. تعمل على تقليل الشهية وحرق الدهون بسرعة مع نتائج ملحوظة من الأسابيع الأولى. بدائل غير جراحية لعمليات التكميم مع متابعة أسبوعية.",
-        image: "/img/services/slimming-injections.jpg",
+          "حقن آمنة وفعّالة لإنقاص الوزن تحت إشراف طبي كامل. تعمل على تقليل الشهية وحرق الدهون بسرعة مع نتائج ملحوظة من الأسابيع الأولى.",
+        image: imageUrl("services/slimming-injections.jpg"),
         gradient: "from-[#ffe5ec] via-[#ffc2d1] to-[#ff8fab]",
       },
       {
@@ -68,8 +104,8 @@ export const serviceCategories: ServiceCategory[] = [
         subtitle: "أمريكي، أسباني",
         icon: Droplet,
         description:
-          "جلسات ميزو ثيرابي لنحت الجسم وشد الترهلات موضعياً. تركيبات أمريكية وأسبانية عالية الجودة تُحقن مباشرة في المنطقة المستهدفة لتكسير الدهون وتحسين مظهر الجلد.",
-        image: "/img/services/slimming-meso.jpg",
+          "جلسات ميزو ثيرابي لنحت الجسم وشد الترهلات موضعياً. تركيبات أمريكية وأسبانية عالية الجودة.",
+        image: imageUrl("services/slimming-meso.jpg"),
         gradient: "from-[#fff0f3] via-[#ffc2d1] to-[#ff8fab]",
       },
       {
@@ -78,8 +114,8 @@ export const serviceCategories: ServiceCategory[] = [
         subtitle: "EMS, Cavitation, Cavi-Pro",
         icon: Waves,
         description:
-          "أحدث أجهزة نحت الجسم: EMS لتحفيز العضلات، الكافيتيشن لتكسير الدهون بالموجات فوق الصوتية، و Cavi-Pro للشد والتقليل من السيلوليت. بدون ألم، بدون فترة راحة.",
-        image: "/img/services/slimming-devices.jpg",
+          "أحدث أجهزة نحت الجسم: EMS لتحفيز العضلات، الكافيتيشن لتكسير الدهون، و Cavi-Pro للشد.",
+        image: imageUrl("services/slimming-devices.jpg"),
         gradient: "from-[#ffe5ec] via-[#ffb3c6] to-[#fb6f92]",
       },
     ],
@@ -87,58 +123,15 @@ export const serviceCategories: ServiceCategory[] = [
   {
     id: "physio",
     label: "علاج طبيعي",
-    items: [
-      {
-        id: "back",
-        title: "فقرات الظهر",
-        subtitle: "علاج الانزلاق الغضروفي والشد العضلي",
-        icon: Activity,
-        description:
-          "برنامج علاجي متكامل لآلام فقرات الظهر، يشمل جلسات كهربائية، تمارين تقوية، وتصحيح وضعية الجسم. مناسب لحالات الانزلاق الغضروفي، الشد العضلي، والتهابات الأعصاب.",
-        image: "/img/services/physio-back.jpg",
-        gradient: "from-[#e8f4f8] via-[#c9e5ec] to-[#8fcbd9]",
-      },
-      {
-        id: "neck",
-        title: "الفقرات العنقية",
-        subtitle: "علاج الديسك والتهاب الأعصاب",
-        icon: PersonStanding,
-        description:
-          "جلسات علاج طبيعي للفقرات العنقية تُخفف الصداع، الدوخة، وتنميل الذراعين الناتج عن الديسك أو الجلوس الطويل. يشمل تمارين استطالة، مساج علاجي، وتصحيح الوضعية.",
-        image: "/img/services/physio-neck.jpg",
-        gradient: "from-[#e8f4f8] via-[#c9e5ec] to-[#8fcbd9]",
-      },
-      {
-        id: "knee",
-        title: "خشونة الركبة",
-        subtitle: "تأهيل ما بعد الجراحة",
-        icon: Bone,
-        description:
-          "تأهيل متخصص لخشونة الركبة وآلام المفاصل. يشمل تقوية العضلات المحيطة، تحسين المدى الحركي، وتقليل الالتهاب بأجهزة حديثة. مناسب لكبار السن ومرحلة ما بعد الجراحة.",
-        image: "/img/services/physio-knee.jpg",
-        gradient: "from-[#e8f4f8] via-[#c9e5ec] to-[#8fcbd9]",
-      },
-      {
-        id: "lumbar",
-        title: "القطاني",
-        subtitle: "علاج آلام أسفل الظهر",
-        icon: Accessibility,
-        description:
-          "علاج مخصص لآلام منطقة الحوض وأسفل الظهر. مزيج من العلاج اليدوي، الأجهزة، وتمارين الاستقرار الأساسية لتحسين الحركة والقضاء على الألم.",
-        image: "/img/services/physio-lumbar.jpg",
-        gradient: "from-[#e8f4f8] via-[#c9e5ec] to-[#8fcbd9]",
-      },
-      {
-        id: "chronic",
-        title: "الألم المزمن",
-        subtitle: "برامج إعادة التأهيل",
-        icon: Zap,
-        description:
-          "برنامج شامل للألم المزمن (الرقبة، الكتف، الظهر، الأطراف) يعتمد على تقنيات متعددة: TENS، موجات صدمية، علاج يدوي، وتمارين مخصصة لحالتك.",
-        image: "/img/services/physio-chronic.jpg",
-        gradient: "from-[#e8f4f8] via-[#c9e5ec] to-[#8fcbd9]",
-      },
-    ],
+    items: physioConditions.map(({ id, label, icon }) => ({
+      id,
+      title: label,
+      icon,
+      description:
+        "برنامج علاجي متكامل يشمل جلسات كهربائية، تمارين تقوية، وتصحيح وضعية الجسم.",
+      image: imageUrl(`services/physio-${id}.jpg`),
+      gradient: "from-[#e8f4f8] via-[#c9e5ec] to-[#8fcbd9]",
+    })),
   },
   {
     id: "hijama",
@@ -146,14 +139,106 @@ export const serviceCategories: ServiceCategory[] = [
     items: [
       {
         id: "hijama",
-        title: "الحجامة",
-        subtitle: "تنشيط الدورة الدموية وطرد السموم",
+        title: copy.hijamaTitle,
+        subtitle: copy.hijamaSubtitle,
         icon: Droplets,
         description:
-          "الحجامة الرطبة والجافة على يد مختصين. تُحسّن الدورة الدموية، تُنشّط الجهاز المناعي، وتُخفف آلام الظهر والصداع. أدوات معقمة للاستخدام مرة واحدة مع بروتوكولات تعقيم كاملة.",
-        image: "/img/services/hijama.jpg",
+          "الحجامة الرطبة والجافة على يد مختصين. تُحسّن الدورة الدموية وتُخفّف آلام الظهر والصداع.",
+        image: imageUrl("services/hijama.jpg"),
         gradient: "from-[#fff5e6] via-[#ffd9b3] to-[#ffb877]",
       },
     ],
   },
 ];
+
+/* ============================================================
+   TikTok videos
+   ============================================================ */
+
+export interface TikTokVideo {
+  id: string;
+  /** MP4 source URL (Supabase or fallback) */
+  src: string;
+  /** Poster thumbnail URL */
+  poster: string;
+  /** Caption shown below the video */
+  caption: string;
+  /** Optional view count like "12.4K" */
+  views?: string;
+  /** Optional link to the original TikTok post */
+  tiktokUrl?: string;
+}
+
+export const tiktokProfileUrl =
+  "https://www.tiktok.com/@user3920978815806";
+
+export const tiktokVideos: TikTokVideo[] = [
+  {
+    id: "1",
+    src: videoUrl("video-1.mp4"),
+    poster: imageUrl("tiktok/video-1.jpg"),
+    caption: "نصائح لتخسيس سريع وفعّال",
+    views: "12.4K",
+    tiktokUrl: "https://www.tiktok.com/@user3920978815806/video/REPLACE-1",
+  },
+  {
+    id: "2",
+    src: videoUrl("video-2.mp4"),
+    poster: imageUrl("tiktok/video-2.jpg"),
+    caption: "فوائد الحجامة للجسم",
+    views: "8.2K",
+    tiktokUrl: "https://www.tiktok.com/@user3920978815806/video/REPLACE-2",
+  },
+  {
+    id: "3",
+    src: videoUrl("video-3.mp4"),
+    poster: imageUrl("tiktok/video-3.jpg"),
+    caption: "تمارين علاج طبيعي للركبة",
+    views: "5.7K",
+    tiktokUrl: "https://www.tiktok.com/@user3920978815806/video/REPLACE-3",
+  },
+  {
+    id: "4",
+    src: videoUrl("video-4.mp4"),
+    poster: imageUrl("tiktok/video-4.jpg"),
+    caption: "أخطاء شائعة في التخسيس",
+    views: "4.1K",
+    tiktokUrl: "https://www.tiktok.com/@user3920978815806/video/REPLACE-4",
+  }
+];
+
+
+/* ============================================================
+   Customer reviews (WhatsApp screenshots)
+   ============================================================ */
+
+export interface CustomerReview {
+  id: string;
+  /** Public URL of the screenshot in Supabase Storage */
+  image: string;
+  /** Optional customer name — used as alt text */
+  name?: string;
+}
+
+/** Base URL for the review images in Supabase Storage */
+const REVIEWS_BASE =
+  "https://yiagmbpjrxbxbnvfedjd.supabase.co/storage/v1/object/public/shima-clinic/tiktok/customer-reviews";
+
+export const customerReviews: CustomerReview[] = [
+  {
+    id: "1",
+    image: `${REVIEWS_BASE}/WhatsApp%20Image%202026-10-17%20at%2000.54.34.jpeg`,
+    name: "عميل",
+  },
+  // Add more reviews as you upload them:
+  // {
+  //   id: "2",
+  //   image: `${REVIEWS_BASE}/WhatsApp%20Image%202026-10-17%20at%2001.12.05.jpeg`,
+  //   name: "عميلة",
+  // },
+  // {
+  //   id: "3",
+  //   image: `${REVIEWS_BASE}/review-3.jpg`,
+  //   name: "عميلة",
+  // },
+];  

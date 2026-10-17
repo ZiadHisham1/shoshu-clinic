@@ -9,9 +9,9 @@ export interface ServiceItem {
   icon: LucideIcon;
   /** Short marketing description shown in the featured panel */
   description: string;
-  /** Image path under /public */
+  /** Full URL or /img/... path for the featured image */
   image: string;
-  /** Figma-style gradient classes for the panel background */
+  /** Tailwind gradient classes for the panel background */
   gradient: string;
 }
 

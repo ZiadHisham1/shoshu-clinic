@@ -35,6 +35,18 @@ interface Props {
   children: ReactNode;
 }
 
+declare global {
+  interface Window {
+    tiktok?: {
+      embed?: {
+        lib?: {
+          render?: () => void;
+        };
+      };
+    };
+  }
+}
+
 const RootLayout = ({ children }: Props) => (
   <ClerkProvider localization={arSA}>
     <html lang="ar" dir="rtl">
