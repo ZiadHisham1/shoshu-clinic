@@ -20,7 +20,7 @@ export default function Hero() {
           fill
           priority
           sizes="100vw"
-          className="object-cover object-center"
+          className="object-cover object-[-10%10%]"
         />
         {/* Figma overlay: #654a4a at 30% */}
         <div className="absolute inset-0 bg-[rgba(101,74,74,0.3)]" />

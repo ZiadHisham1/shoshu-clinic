@@ -47,6 +47,18 @@ const config: Config = {
         tajawal:  ["var(--font-tajawal)",   "system-ui", "sans-serif"],
         sacramento: ["var(--font-sacramento)", "cursive"],
       },
+      keyframes: {
+        "gradient-shift": {
+          "0%, 100%": { "background-position": "0% 50%" },
+          "50%": { "background-position": "100% 50%" },
+        },
+      },
+      animation: {
+        "gradient-shift": "gradient-shift 6s ease infinite",
+      },
+      backgroundSize: {
+        "300": "300% 300%",
+      },
     },
   },
   plugins: [],

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { CalendarCheck, Clock, LayoutDashboard } from "lucide-react";
 import { AdminNavTabs } from "./AdminNavTabs";
 
-export const metadata = { title: "لوحة التحكم — شوشو كلينك" };
+export const metadata = { title: "لوحة التحكم — shima clinic" };
 
 export default function AdminLayout({
   children,

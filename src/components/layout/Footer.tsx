@@ -88,7 +88,7 @@ const Footer = () => (
 
     {/* Copyright */}
     <p className="mt-6 font-tajawal text-sm text-figma-textMut">
-      © {new Date().getFullYear()} shimaa clinic
+      © {new Date().getFullYear()} shima clinic
     </p>
   </footer>
 );

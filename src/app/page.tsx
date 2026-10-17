@@ -12,6 +12,7 @@ import StickyCTA from "@/components/sections/StickyCTA";
 import LotusDivider from "@/components/ui/LotusDivider";
 import TikTokSection from "@/components/sections/TikTokSection";
 import { listReviews } from "@/lib/reviews";
+import AboutSection from "@/components/sections/AboutSection";
 
 /** Revalidate the page every 60 seconds — matches the reviews cache */
 export const revalidate = 60;
@@ -35,6 +36,7 @@ const HomePage = async () => {
         <LotusDivider />
         <PhysioSection />
         <HijamaSection />
+        <AboutSection />
       </div>
 
       <Footer />
