@@ -20,17 +20,17 @@ export default function Hero() {
           fill
           priority
           sizes="100vw"
-          className="object-cover object-[-10%10%]"
+          className="object-cover object-[90%45%]"
         />
         {/* Figma overlay: #654a4a at 30% */}
         <div className="absolute inset-0 bg-[rgba(101,74,74,0.3)]" />
       </div>
 
       {/* Content */}
-      <div className="relative mx-auto flex min-h-[280px] max-w-7xl flex-col justify-center px-4 py-12 sm:min-h-[340px] sm:px-6 sm:py-16 lg:min-h-[384px] lg:px-8">
+      <div className="relative mx-auto flex min-h-[280px] max-w-7xl flex-col justify-center px-4 py-12 sm:min-h-[340px] sm:px-6 sm:py-16 lg:min-h-[384px] lg:h-[500px] lg:px-8">
         <div className="flex flex-col gap-6">
           {/* Title — two lines on mobile, inline on desktop */}
-          <h1 className="flex flex-col gap-0 text-start font-tajawal text-4xl font-extrabold leading-tight text-white sm:text-5xl lg:flex-row lg:items-baseline lg:gap-4 lg:text-6xl">
+          <h1 className="flex flex-col gap-0 text-end font-tajawal text-4xl font-extrabold leading-tight text-white sm:text-5xl lg:flex-col items-start lg:gap-4 lg:text-6xl">
             <span>عيشي براحة</span>
             <span>الصحة اسلوب حياه</span>
           </h1>

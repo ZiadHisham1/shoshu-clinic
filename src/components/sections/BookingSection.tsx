@@ -12,14 +12,39 @@ const BookingSection = () => (
         <div className="w-full rounded-[24px] border border-black/10 bg-figma-card p-4 sm:rounded-[31px] sm:p-6">
           <div className="flex flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:gap-6">
             <div className="flex flex-1 flex-col items-start gap-3 text-start sm:items-start sm:text-end">
-              <div>
-                <p className="font-tajawal text-xl font-extrabold text-figma-text sm:text-2xl">
-                  احجزي جلستك الان
-                </p>
-                <p className="mt-1 font-tajawal text-base text-figma-text sm:text-lg">
-                  استشارة اولي مجانا
-                </p>
+             <div>
+              <p className="font-tajawal text-start text-xl font-extrabold text-figma-text sm:text-2xl">
+                احجزي جلستك الان
+              </p>
+              
+              <div className="mt-2 font-tajawal text-start max-w-lg text-figma-text sm:text-lg">
+                <span className="font-bold px-1 block mb-3">
+                   كشف اولي يشمل قياس:
+                </span>
+                
+                {/* 3 Columns x 2 Rows Grid */}
+                <ul className="grid grid-cols-3 grid-rows-2 gap-x-2 gap-y-3 text-sm sm:text-base">
+                  <li className="flex items-center gap-1.5">
+                    <span className="text-green-600 font-bold">✓</span> InBody
+                  </li>
+                  <li className="flex items-center gap-1.5">
+                    <span className="text-green-600 font-bold">✓</span> نسبة الدهون
+                  </li>
+                  <li className="flex items-center gap-1.5">
+                    <span className="text-green-600 font-bold">✓</span> نسبة المياه
+                  </li>
+                  <li className="flex items-center gap-1.5">
+                    <span className="text-green-600 font-bold">✓</span> نسبة العضلات
+                  </li>
+                  <li className="flex items-center gap-1.5">
+                    <span className="text-green-600 font-bold">✓</span> معدلات الحرق
+                  </li>
+                  <li className="flex items-center gap-1.5">
+                    <span className="text-green-600 font-bold">✓</span> خطة لجسمك
+                  </li>
+                </ul>
               </div>
+            </div>
 
               <a
                 href={siteConfig.bookingUrl}
@@ -30,7 +55,7 @@ const BookingSection = () => (
               </a>
             </div>
 
-            <div className="hidden h-[70px] w-[70px] shrink-0 items-center justify-center rounded-full bg-white sm:flex">
+            <div className="hidden h-[100px] w-[100px] shrink-0 items-center justify-center rounded-full bg-white sm:flex">
               <Calendar className="h-12 w-12 text-figma-card" />
             </div>
           </div>

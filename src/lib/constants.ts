@@ -37,7 +37,7 @@ export function videoUrl(path: string): string {
    ============================================================ */
 
 export const siteConfig = {
-  name: "عيادة الدكتورة شيماء نوار",
+  name: "عيادة الدكتورة شيما نوار",
   description: "تخسيس، علاج طبيعي وحجامة — خصم علي اول استشارة",
   bookingUrl: "/booking",
   whatsapp: "201126661822",
@@ -75,7 +75,7 @@ export const physioConditions: PhysioCondition[] = [
   { id: "back", label: "فقرات الظهر", icon: Activity },
   { id: "neck", label: "الفقرات العنقية", icon: PersonStanding },
   { id: "knee", label: "خشونة الركبة", icon: Bone },
-  { id: "lumbar", label: "القطانية", icon: Accessibility },
+  { id: "lumbar", label: "الفقرات القطنية", icon: Accessibility },
   { id: "chronic", label: "الألم المزمن", icon: Zap },
 ];
 
@@ -91,7 +91,7 @@ export const serviceCategories: ServiceCategory[] = [
       {
         id: "injections",
         title: "حقن التخسيس",
-        subtitle: "بديل تكميم، جوفي، منجارو، ريتا",
+        subtitle: "بديل تكميم، وجوفي، منجارو، ريتا",
         icon: Syringe,
         description:
           "حقن آمنة وفعّالة لإنقاص الوزن تحت إشراف طبي كامل. تعمل على تقليل الشهية وحرق الدهون بسرعة مع نتائج ملحوظة من الأسابيع الأولى.",
@@ -179,23 +179,23 @@ export const tiktokVideos: TikTokVideo[] = [
     poster: imageUrl("tiktok/tik-imgs/video-1.png"),
     caption: "نصائح لتخسيس سريع وفعّال",
     views: "12.4K",
-    tiktokUrl: "https://www.tiktok.com/@user3920978815806/video/REPLACE-1",
+    tiktokUrl: "https://www.tiktok.com/@user3920978815806/video/7674939846980357384",
   },
   {
     id: "2",
     src: videoUrl("video-2.mp4"),
     poster: imageUrl("tiktok/tik-imgs/video-2.png"),
-    caption: "فوائد الحجامة للجسم",
+    caption: "ازاي نخس باستعمال حقن الميزو ثيرابي",
     views: "8.2K",
-    tiktokUrl: "https://www.tiktok.com/@user3920978815806/video/REPLACE-2",
+    tiktokUrl: "https://www.tiktok.com/@user3920978815806/video/7678635000991960328",
   },
   {
     id: "3",
     src: videoUrl("video-3.mp4"),
     poster: imageUrl("tiktok/tik-imgs/video-3.png"),
-    caption: "تمارين علاج طبيعي للركبة",
+    caption: "علاج مقاومة الانسولين",
     views: "5.7K",
-    tiktokUrl: "https://www.tiktok.com/@user3920978815806/video/REPLACE-3",
+    tiktokUrl: "https://www.tiktok.com/@user3920978815806/video/7696077101761400116",
   },
   {
     id: "4",
@@ -203,7 +203,7 @@ export const tiktokVideos: TikTokVideo[] = [
     poster: imageUrl("tiktok/tik-imgs/video-4.png"),
     caption: "أخطاء شائعة في التخسيس",
     views: "4.1K",
-    tiktokUrl: "https://www.tiktok.com/@user3920978815806/video/REPLACE-4",
+    tiktokUrl: "https://www.tiktok.com/@user3920978815806/video/7696475326724984072",
   }
 ];
 
@@ -245,9 +245,9 @@ export const customerReviews: CustomerReview[] = [
 
 export const aboutCopy = {
   label: "من نحن",
-  heading: "شيماء كلينك — رعاية تثق بها",
+  heading: "شيما كلينك — رعاية تثق بها",
   paragraphs: [
-    "شيماء كلينك هو مركز متخصص في التخسيس والعلاج الطبيعي والحجامة، يقدم رعاية طبية شاملة تحت إشراف نخبة من الأطباء والمختصين.",
+    "شيما كلينك هو مركز متخصص في التخسيس والعلاج الطبيعي والحجامة، يقدم رعاية طبية شاملة تحت إشراف نخبة من الأطباء والمختصين.",
     "نؤمن أن الصحة أسلوب حياة — لذلك نقدم خططاً علاجية مخصصة لكل عميل، تجمع بين أحدث الأجهزة الطبية والبروتوكولات المعتمدة عالمياً.",
     "رحلتك معنا تبدأ باستشارة أولى مجانية، وتستمر بمتابعة دقيقة حتى تحققي نتائجك المستهدفة.",
   ],

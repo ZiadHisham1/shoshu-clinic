@@ -28,7 +28,7 @@ const AboutSection = () => {
                 <div className="relative aspect-[4/5] w-full overflow-hidden rounded-[20px] border border-black/10 bg-white shadow-[0_20px_40px_-20px_rgba(251,111,146,0.4)]">
                   <Image
                     src="/img/about.png"
-                    alt="فريق شيماء كلينك"
+                    alt="فريق شيما كلينك"
                     fill
                     sizes="(max-width: 1024px) 100vw, 50vw"
                     className="object-cover"
