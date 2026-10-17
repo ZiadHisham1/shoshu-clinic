@@ -22,11 +22,9 @@ export interface Service {
 
 export interface Slot {
   id: string;
-  service_id: string;
   start_at: string;
   end_at: string;
   is_booked: boolean;
-  /** Computed server-side: true if booked OR overlaps another booking */
   is_blocked?: boolean;
 }
 
@@ -50,14 +48,12 @@ export function BookingFlow({ services, slots }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const serviceSlots = service
-    ? slots.filter((s) => s.service_id === service.id)
-    : [];
+  // Slots are now a shared pool, so we just pass all of them to the picker
+  const availableSlots = slots;
 
   useEffect(() => {
-    console.log("[BookingFlow] total slots:", slots.length);
-    console.log("[BookingFlow] service slots:", serviceSlots.length);
-  }, [slots.length, serviceSlots.length]);
+    console.log("[BookingFlow] total slots:", availableSlots.length);
+  }, [availableSlots.length]);
 
   const phoneDigits = digitsOnly(phone);
   const canSubmit =
@@ -83,6 +79,7 @@ export function BookingFlow({ services, slots }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           slot_id: slot.id,
+          service_id: service.id, // <--- MUST PASS SERVICE ID NOW
           customer_name: name.trim(),
           customer_phone: phoneDigits,
           notes: notes.trim() || null,
@@ -93,7 +90,8 @@ export function BookingFlow({ services, slots }: Props) {
 
       if (!res.ok) {
         setError(
-          data.error === "SLOT_ALREADY_BOOKED"
+          data.error === "SLOT_ALREADY_BOOKED" ||
+          data.error === "SLOT_OVERLAPS_EXISTING_BOOKING"
             ? "هذا الموعد تم حجزه للتو. اختر موعداً آخر."
             : data.message ?? "فشل إنشاء الحجز"
         );
@@ -101,7 +99,7 @@ export function BookingFlow({ services, slots }: Props) {
         return;
       }
 
-      // ⬇️ Open WhatsApp in a new tab with pre-filled booking message
+      // WhatsApp Redirect
       const booking = data.booking;
       const waUrl = buildWhatsAppUrl({
         bookingId: booking.id,
@@ -113,10 +111,7 @@ export function BookingFlow({ services, slots }: Props) {
         clinicPhone: siteConfig.whatsapp,
       });
 
-      // Open WhatsApp in a new tab (keeps confirmation page accessible via back)
       window.open(waUrl, "_blank", "noopener,noreferrer");
-
-      // Then navigate to confirmation page
       router.push(`/booking/${booking.id}`);
     } catch (e) {
       setError((e as Error).message ?? "حدث خطأ غير متوقع");
@@ -294,7 +289,7 @@ export function BookingFlow({ services, slots }: Props) {
               )}
 
               <MonthSlotPicker
-                slots={serviceSlots}
+                slots={availableSlots} // <--- PASS ALL SLOTS
                 selected={slot}
                 onSelect={(s) => {
                   setSlot(s);

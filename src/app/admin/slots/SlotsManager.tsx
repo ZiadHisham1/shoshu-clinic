@@ -19,13 +19,9 @@ interface Service {
 
 export interface Slot {
   id: string;
-  service_id: string;
   start_at: string;
   end_at: string;
   is_booked: boolean;
-  service: { name: string } | null;
-  is_blocked?: boolean;
-  
 }
 
 interface Props {
@@ -42,47 +38,33 @@ export function SlotsManager({ services, initialSlots }: Props) {
     text: string;
   } | null>(null);
 
-  /* ── Sync when server sends fresh data ── */
   useEffect(() => {
     setSlots(initialSlots);
   }, [initialSlots]);
 
-  /* ── Form state — start empty to avoid SSR/client date mismatch ── */
-  const [serviceId, setServiceId] = useState(services[0]?.id ?? "");
+  /* ── Form state ── */
   const [dateFrom, setDateFrom] = useState<string>("");
   const [dateTo, setDateTo] = useState<string>("");
   const [timeStart, setTimeStart] = useState("10:00");
   const [timeEnd, setTimeEnd] = useState("18:00");
-  const [duration, setDuration] = useState(30);
-  // ← NEW: default false = Saturdays are allowed
   const [skipSaturday, setSkipSaturday] = useState(false);
 
-  /* ── Set date defaults AFTER mount (client-only) ── */
   useEffect(() => {
     setDateFrom(todayIso());
     setDateTo(addDays(todayIso(), 30));
   }, []);
 
-  /* ── Filters ── */
-  const [filterService, setFilterService] = useState<string>("all");
-  const [showBooked, setShowBooked] = useState(true);
+  const byDate = groupByDate(slots);
 
-  const visibleSlots = slots
-    .filter((s) => filterService === "all" || s.service_id === filterService)
-    .filter((s) => showBooked || !s.is_booked);
-
-  const byDate = groupByDate(visibleSlots);
-
-  /* ── Generate for one service ── */
+  /* ── Generate ── */
   function handleGenerate() {
     setMessage(null);
     const input: GenerateInput = {
-      serviceId,
       dateFrom,
       dateTo,
       timeStart,
       timeEnd,
-      durationMinutes: duration,
+      intervalMinutes: 15,
       skipSaturday,
     };
 
@@ -95,59 +77,14 @@ export function SlotsManager({ services, initialSlots }: Props) {
           return;
         }
 
-        const check = await verifySlots({ serviceId, dateFrom, dateTo });
+        const check = await verifySlots({ dateFrom, dateTo });
 
         setMessage({
           type: "ok",
-          text: `✅ تم إرسال ${res.inserted ?? 0} موعد — العدد الفعلي في قاعدة البيانات: ${check.count}`,
+          text: `✅ تم إنشاء ${res.inserted ?? 0} موعد (تم تخطي ${
+            res.skipped ?? 0
+          } موجود مسبقاً) — الإجمالي الفعلي: ${check.count}`,
         });
-
-        router.refresh();
-      } catch (e) {
-        setMessage({
-          type: "err",
-          text: e instanceof Error ? e.message : "خطأ غير متوقع",
-        });
-      }
-    });
-  }
-
-  /* ── Generate for ALL services ── */
-  function handleGenerateAll() {
-    setMessage(null);
-    startTransition(async () => {
-      let totalInserted = 0;
-      const failed: string[] = [];
-
-      try {
-        for (const svc of services) {
-          const res = await generateSlots({
-            serviceId: svc.id,
-            dateFrom,
-            dateTo,
-            timeStart,
-            timeEnd,
-            durationMinutes: svc.duration_minutes || duration,
-            skipSaturday,
-          });
-          if (res.ok) {
-            totalInserted += res.inserted ?? 0;
-          } else {
-            failed.push(`${svc.name}: ${res.error}`);
-          }
-        }
-
-        if (failed.length === 0) {
-          setMessage({
-            type: "ok",
-            text: `✅ تم إنشاء ${totalInserted} موعد لكل الخدمات`,
-          });
-        } else {
-          setMessage({
-            type: "err",
-            text: `تم إنشاء ${totalInserted} موعد. فشل: ${failed.join(", ")}`,
-          });
-        }
 
         router.refresh();
       } catch (e) {
@@ -192,7 +129,6 @@ export function SlotsManager({ services, initialSlots }: Props) {
     startTransition(async () => {
       try {
         const res = await deleteSlotsRange({
-          serviceId: filterService === "all" ? undefined : filterService,
           dateFrom: from,
           dateTo: to,
           onlyUnbooked,
@@ -257,14 +193,8 @@ export function SlotsManager({ services, initialSlots }: Props) {
           </button>
         </div>
 
-        {/* Form fields — key on dates forces Firefox to redraw */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          <Select
-            label="الخدمة"
-            value={serviceId}
-            onChange={setServiceId}
-            options={services.map((s) => ({ value: s.id, label: s.name }))}
-          />
+        {/* Form fields */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <Input
             key={`from-${dateFrom}`}
             label="من تاريخ"
@@ -291,18 +221,6 @@ export function SlotsManager({ services, initialSlots }: Props) {
             value={timeEnd}
             onChange={setTimeEnd}
           />
-          <Select
-            label="مدة الموعد"
-            value={String(duration)}
-            onChange={(v) => setDuration(Number(v))}
-            options={[
-              { value: "15", label: "15 دقيقة" },
-              { value: "20", label: "20 دقيقة" },
-              { value: "30", label: "30 دقيقة" },
-              { value: "45", label: "45 دقيقة" },
-              { value: "60", label: "60 دقيقة" },
-            ]}
-          />
         </div>
 
         {/* Skip Saturday — unchecked by default */}
@@ -321,7 +239,7 @@ export function SlotsManager({ services, initialSlots }: Props) {
           <button
             type="button"
             onClick={handleGenerate}
-            disabled={isPending || !serviceId || !dateFrom || !dateTo}
+            disabled={isPending || !dateFrom || !dateTo}
             className="h-12 px-6 rounded-full bg-primary text-white font-lalezar hover:bg-primary/90 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed transition"
           >
             {isPending ? "جاري الإنشاء..." : "إنشاء المواعيد"}
@@ -329,8 +247,8 @@ export function SlotsManager({ services, initialSlots }: Props) {
 
           <button
             type="button"
-            onClick={handleGenerateAll}
-            disabled={isPending || services.length === 0 || !dateFrom || !dateTo}
+            onClick={handleGenerate}
+            disabled={isPending || !dateFrom || !dateTo}
             className="h-12 px-6 rounded-full bg-figma-header text-white font-lalezar hover:bg-figma-header/90 disabled:opacity-50 transition"
           >
             {isPending ? "جاري الإنشاء..." : "إنشاء لكل الخدمات"}
@@ -359,28 +277,6 @@ export function SlotsManager({ services, initialSlots }: Props) {
             {message.text}
           </div>
         )}
-      </section>
-
-      {/* ═══════════ FILTERS ═══════════ */}
-      <section className="flex flex-wrap items-center gap-3">
-        <Select
-          label="الخدمة"
-          value={filterService}
-          onChange={setFilterService}
-          options={[
-            { value: "all", label: "الكل" },
-            ...services.map((s) => ({ value: s.id, label: s.name })),
-          ]}
-        />
-        <label className="flex items-center gap-2 text-sm font-lalezar text-ink/70 mt-6">
-          <input
-            type="checkbox"
-            checked={showBooked}
-            onChange={(e) => setShowBooked(e.target.checked)}
-            className="w-4 h-4 rounded"
-          />
-          عرض المحجوز
-        </label>
       </section>
 
       {/* ═══════════ LIST ═══════════ */}
@@ -473,37 +369,6 @@ function Input({
         onChange={(e) => onChange(e.target.value)}
         className="w-full h-11 rounded-xl bg-white ring-1 ring-ink/10 px-3 font-lalezar text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/40"
       />
-    </div>
-  );
-}
-
-function Select({
-  label,
-  value,
-  onChange,
-  options,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  options: { value: string; label: string }[];
-}) {
-  return (
-    <div>
-      <label className="block text-xs text-ink/60 font-lalezar mb-1">
-        {label}
-      </label>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full h-11 rounded-xl bg-white ring-1 ring-ink/10 px-3 font-lalezar text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/40"
-      >
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
     </div>
   );
 }

@@ -5,9 +5,10 @@ import { createClient } from "@supabase/supabase-js";
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { slot_id, customer_name, customer_phone, notes } = body;
+    // 1. Extract service_id from the body
+    const { slot_id, service_id, customer_name, customer_phone, notes } = body;
 
-    if (!slot_id || !customer_name || !customer_phone) {
+    if (!slot_id || !service_id || !customer_name || !customer_phone) {
       return NextResponse.json(
         { error: "MISSING_FIELDS", message: "بيانات ناقصة" },
         { status: 400 }
@@ -27,9 +28,10 @@ export async function POST(req: Request) {
       }
     );
 
-    // 1. Create the booking via RPC
+    // 2. Call the new RPC signature with p_service_id
     const { data, error } = await supabase.rpc("book_slot", {
       p_slot_id: slot_id,
+      p_service_id: service_id, // <--- MUST INCLUDE THIS
       p_customer_name: customer_name,
       p_customer_phone: customer_phone,
       p_notes: notes ?? null,
@@ -37,18 +39,31 @@ export async function POST(req: Request) {
 
     if (error) {
       const msg = error.message ?? "";
+      
       if (msg.includes("SLOT_ALREADY_BOOKED")) {
         return NextResponse.json(
           { error: "SLOT_ALREADY_BOOKED", message: "الموعد محجوز" },
           { status: 409 }
         );
       }
+      
+      if (msg.includes("SLOT_OVERLAPS_EXISTING_BOOKING")) {
+        return NextResponse.json(
+          {
+            error: "SLOT_OVERLAPS_EXISTING_BOOKING",
+            message: "هذا الموعد يتعارض مع حجز آخر. اختر موعداً مختلفاً.",
+          },
+          { status: 409 }
+        );
+      }
+
       if (msg.includes("SLOT_NOT_FOUND")) {
         return NextResponse.json(
           { error: "SLOT_NOT_FOUND", message: "الموعد غير موجود" },
           { status: 404 }
         );
       }
+
       console.error("[bookings/create]", error);
       return NextResponse.json(
         { error: "DB_ERROR", message: error.message },
@@ -56,7 +71,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // 2. Re-fetch with joins so we can build a rich WhatsApp message
+    // 3. Fetch enriched data for WhatsApp redirect
     const bookingId = (data as { id: string }).id;
 
     const { data: enriched } = await supabase
@@ -68,7 +83,6 @@ export async function POST(req: Request) {
       .eq("id", bookingId)
       .single();
 
-    // 3. Flatten Supabase's array-wrapped joins
     const slot = Array.isArray(enriched?.slot)
       ? enriched?.slot[0] ?? null
       : enriched?.slot ?? null;
@@ -98,4 +112,4 @@ export async function POST(req: Request) {
       { status: 500 }
     );
   }
-} 
+}

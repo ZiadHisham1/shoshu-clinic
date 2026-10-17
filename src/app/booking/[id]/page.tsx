@@ -13,38 +13,30 @@ export default async function BookingConfirmationPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-    const { id } = await params;
-  console.log("[booking/[id]] rendering id:", id);
-
+  const { id } = await params;
   const supabase = createPublicClient();
 
-  const { data, error, status, statusText } = await supabase
+  // Fetch booking + slot + service (via booking.service_id)
+  const { data, error } = await supabase
     .from("bookings")
     .select(
-      `id, customer_name, customer_phone, notes, status, created_at,
-       slot:slots ( start_at, end_at, service:services (name, duration_minutes) )`
+      `id, customer_name, customer_phone, notes, status, created_at, duration_minutes,
+       service:services ( name, duration_minutes ),
+       slot:slots ( start_at, end_at )`
     )
     .eq("id", id)
     .single();
 
-  console.log("[booking/[id]] status:", status, statusText);
-  console.log("[booking/[id]] error:", JSON.stringify(error, null, 2));
-  console.log("[booking/[id]] data:", JSON.stringify(data, null, 2));
-
   if (error || !data) {
-    console.log("[booking/[id]] → calling notFound()");
     notFound();
   }
 
   // Flatten Supabase joins
   const slot = Array.isArray(data.slot) ? data.slot[0] : data.slot;
-  const service = slot
-    ? Array.isArray(slot.service)
-      ? slot.service[0]
-      : slot.service
-    : null;
+  const service = Array.isArray(data.service) ? data.service[0] : data.service;
 
   const start = slot?.start_at ? new Date(slot.start_at) : null;
+  const duration = data.duration_minutes || service?.duration_minutes;
 
   return (
     <main className="min-h-screen bg-figma-page grid place-items-center px-4 py-8 sm:py-12">
@@ -101,11 +93,8 @@ export default async function BookingConfirmationPage({
                 : "—"
             }
           />
-          {service?.duration_minutes && (
-            <Row
-              label="المدة"
-              value={`${service.duration_minutes} دقيقة`}
-            />
+          {duration && (
+            <Row label="المدة" value={`${duration} دقيقة`} />
           )}
           <Row label="الاسم" value={data.customer_name} />
           <Row label="رقم الهاتف" value={data.customer_phone} />
@@ -168,4 +157,4 @@ function Row({ label, value }: { label: string; value: string }) {
       </span>
     </div>
   );
-} 
+}

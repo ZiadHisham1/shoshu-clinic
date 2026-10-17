@@ -13,25 +13,25 @@ export default async function AdminHomePage() {
 
   const supabase = createAdminClient();
 
-  /* ── Fetch stats in parallel ── */
+  /* ── Time boundaries ── */
   const now = new Date();
+  const nowMs = now.getTime();
   const todayStart = new Date(now);
   todayStart.setHours(0, 0, 0, 0);
   const todayEnd = new Date(now);
   todayEnd.setHours(23, 59, 59, 999);
-  const in30Days = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  const in30Days = new Date(nowMs + 30 * 24 * 60 * 60 * 1000);
+  const in90Days = new Date(nowMs + 90 * 24 * 60 * 60 * 1000);
 
+  /* ── Fetch stats in parallel ── */
   const [
     totalBookingsRes,
     todayBookingsRes,
     upcomingBookingsRes,
     pendingBookingsRes,
     servicesRes,
-    slotsRes,
   ] = await Promise.all([
-    supabase
-      .from("bookings")
-      .select("*", { count: "exact", head: true }),
+    supabase.from("bookings").select("*", { count: "exact", head: true }),
     supabase
       .from("bookings")
       .select("*", { count: "exact", head: true })
@@ -45,16 +45,8 @@ export default async function AdminHomePage() {
       .from("bookings")
       .select("*", { count: "exact", head: true })
       .eq("status", "confirmed"),
-    // Only fetch services + slots if admin — managers don't need them
     isAdmin
       ? supabase.from("services").select("id, name").order("name")
-      : Promise.resolve({ data: [], error: null }),
-    isAdmin
-      ? supabase
-          .from("slots")
-          .select("id, service_id, start_at")
-          .gte("start_at", now.toISOString())
-          .lte("start_at", in30Days.toISOString())
       : Promise.resolve({ data: [], error: null }),
   ]);
 
@@ -63,25 +55,63 @@ export default async function AdminHomePage() {
   const upcomingConfirmed = upcomingBookingsRes.count ?? 0;
   const pending = pendingBookingsRes.count ?? 0;
 
-  const services = servicesRes.data ?? [];
-  const slots = slotsRes.data ?? [];
+  /* ── Fetch ALL future slots (paginated) ── */
+  let allSlots: { id: string; start_at: string }[] = [];
 
-  /* ── Coverage per service (admin only) ── */
+  if (isAdmin) {
+    const PAGE_SIZE = 1000;
+    const MAX_SLOTS = 20000;
+
+    for (let from = 0; from < MAX_SLOTS; from += PAGE_SIZE) {
+      const { data, error } = await supabase
+        .from("slots")
+        .select("id, start_at")
+        .gte("start_at", now.toISOString())
+        .lte("start_at", in90Days.toISOString())
+        .order("start_at", { ascending: true })
+        .range(from, from + PAGE_SIZE - 1);
+
+      if (error) {
+        console.error("[admin] slot fetch error:", error);
+        break;
+      }
+
+      if (!data || data.length === 0) break;
+      allSlots.push(...data);
+      if (data.length < PAGE_SIZE) break;
+    }
+  }
+
+  const services = servicesRes.data ?? [];
+  const slots = allSlots;
+
+  /* ── Coverage per service (Shared Pool Logic) ── */
   const coverage = isAdmin
     ? services.map((svc) => {
-        const svcSlots = slots.filter((s) => s.service_id === svc.id);
-        const latest = svcSlots.reduce<number>(
+        // Since slots are shared, we just look at the global pool
+        const slotsIn30Days = slots.filter((s) => {
+          const t = new Date(s.start_at).getTime();
+          return t >= nowMs && t <= nowMs + 30 * 24 * 60 * 60 * 1000;
+        }).length;
+
+        const latest = slots.reduce(
           (max, s) => Math.max(max, new Date(s.start_at).getTime()),
           0
         );
         const daysAhead = latest
-          ? Math.floor((latest - now.getTime()) / (1000 * 60 * 60 * 24))
+          ? Math.floor((latest - nowMs) / (1000 * 60 * 60 * 24))
           : 0;
-        return { name: svc.name, daysAhead, count: svcSlots.length };
+
+        return {
+          name: svc.name,
+          daysAhead,
+          count: slots.length, // total slots in the system
+          slotsIn30Days,
+        };
       })
     : [];
 
-  const lowCoverage = coverage.filter((c) => c.daysAhead < 30);
+  const lowCoverage = coverage.filter((c) => c.slotsIn30Days < 10);
 
   const userName =
     user?.firstName ?? user?.emailAddresses[0]?.emailAddress ?? "";
@@ -157,7 +187,7 @@ export default async function AdminHomePage() {
         </div>
       </section>
 
-      {/* ═══════════ Coverage warning (admin only) ═══════════ */}
+      {/* ═══════════ Coverage warning ═══════════ */}
       {isAdmin && lowCoverage.length > 0 && (
         <section className="rounded-2xl bg-amber-50 p-4 ring-1 ring-amber-200 sm:p-5">
           <div className="flex items-start gap-3">
@@ -167,7 +197,7 @@ export default async function AdminHomePage() {
                 مواعيد تنقص قريباً
               </h3>
               <p className="mt-1 font-lalezar text-sm text-amber-800">
-                الخدمات التالية لديها أقل من ٣٠ يوم من المواعيد المتاحة.
+                الخدمات التالية لديها أقل من ١٠ مواعيد متاحة خلال ٣٠ يوماً.
               </p>
 
               <ul className="mt-3 space-y-1.5">
@@ -178,7 +208,7 @@ export default async function AdminHomePage() {
                   >
                     <span className="font-bold text-amber-900">{c.name}</span>
                     <span className="text-amber-700">
-                      {c.daysAhead} يوم • {c.count} موعد
+                      {c.slotsIn30Days} موعد فقط • آخر موعد بعد {c.daysAhead} يوم
                     </span>
                   </li>
                 ))}
