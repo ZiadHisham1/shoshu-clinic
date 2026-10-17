@@ -3,6 +3,7 @@ import { UserButton } from "@clerk/nextjs";
 import Link from "next/link";
 import { LayoutDashboard } from "lucide-react";
 import { AdminNavTabs } from "./AdminNavTabs";
+import { Analytics } from "@vercel/analytics/next"
 
 export const metadata = { title: "لوحة التحكم — شوشو كلينك" };
 
