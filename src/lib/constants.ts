@@ -95,7 +95,7 @@ export const serviceCategories: ServiceCategory[] = [
         icon: Syringe,
         description:
           "حقن آمنة وفعّالة لإنقاص الوزن تحت إشراف طبي كامل. تعمل على تقليل الشهية وحرق الدهون بسرعة مع نتائج ملحوظة من الأسابيع الأولى.",
-        image: imageUrl("services/slimming-injections.jpg"),
+        image: "/img/services/slimming-injections.jpg",
         gradient: "from-[#ffe5ec] via-[#ffc2d1] to-[#ff8fab]",
       },
       {
@@ -105,7 +105,7 @@ export const serviceCategories: ServiceCategory[] = [
         icon: Droplet,
         description:
           "جلسات ميزو ثيرابي لنحت الجسم وشد الترهلات موضعياً. تركيبات أمريكية وأسبانية عالية الجودة.",
-        image: imageUrl("services/slimming-meso.jpg"),
+        image: "/img/services/slimming-meso.jpg",
         gradient: "from-[#fff0f3] via-[#ffc2d1] to-[#ff8fab]",
       },
       {
@@ -115,7 +115,7 @@ export const serviceCategories: ServiceCategory[] = [
         icon: Waves,
         description:
           "أحدث أجهزة نحت الجسم: EMS لتحفيز العضلات، الكافيتيشن لتكسير الدهون، و Cavi-Pro للشد.",
-        image: imageUrl("services/slimming-devices.jpg"),
+        image: "/img/services/slimming-devices.jpg",
         gradient: "from-[#ffe5ec] via-[#ffb3c6] to-[#fb6f92]",
       },
     ],
@@ -129,7 +129,7 @@ export const serviceCategories: ServiceCategory[] = [
       icon,
       description:
         "برنامج علاجي متكامل يشمل جلسات كهربائية، تمارين تقوية، وتصحيح وضعية الجسم.",
-      image: imageUrl(`services/physio-${id}.jpg`),
+      image: `/img/services/physio-${id}.jpg`,
       gradient: "from-[#e8f4f8] via-[#c9e5ec] to-[#8fcbd9]",
     })),
   },
@@ -144,7 +144,7 @@ export const serviceCategories: ServiceCategory[] = [
         icon: Droplets,
         description:
           "الحجامة الرطبة والجافة على يد مختصين. تُحسّن الدورة الدموية وتُخفّف آلام الظهر والصداع.",
-        image: imageUrl("services/hijama.jpg"),
+        image: "/img/services/hijama.jpg",
         gradient: "from-[#fff5e6] via-[#ffd9b3] to-[#ffb877]",
       },
     ],
