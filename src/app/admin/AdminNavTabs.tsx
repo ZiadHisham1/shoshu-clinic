@@ -5,18 +5,26 @@ import { usePathname } from "next/navigation";
 import { CalendarCheck, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const TABS = [
-  { href: "/admin", label: "نظرة عامة", icon: CalendarCheck, exact: true },
-  { href: "/admin/bookings", label: "الحجوزات", icon: CalendarCheck },
-  { href: "/admin/slots", label: "المواعيد", icon: Clock },
-];
+interface Props {
+  role: string;
+}
 
-export function AdminNavTabs() {
+export function AdminNavTabs({ role }: Props) {
   const pathname = usePathname();
+  const isAdmin = role === "admin";
+
+  const tabs = [
+    { href: "/admin", label: "نظرة عامة", icon: CalendarCheck, exact: true },
+    { href: "/admin/bookings", label: "الحجوزات", icon: CalendarCheck },
+    // Only admins see slots management
+    ...(isAdmin
+      ? [{ href: "/admin/slots", label: "المواعيد", icon: Clock }]
+      : []),
+  ];
 
   return (
     <nav className="mx-auto flex max-w-[1200px] items-center gap-1 overflow-x-auto px-4 sm:px-6">
-      {TABS.map((tab) => {
+      {tabs.map((tab) => {
         const active = tab.exact
           ? pathname === tab.href
           : pathname.startsWith(tab.href);

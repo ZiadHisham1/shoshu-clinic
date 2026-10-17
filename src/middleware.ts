@@ -1,36 +1,44 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
-const isProtectedRoute = createRouteMatcher([
-  "/admin(.*)",       // anything under /admin
-  "/my-bookings(.*)", // customer's own bookings
-]);
-
 const isAdminRoute = createRouteMatcher(["/admin(.*)"]);
+const isSlotsRoute = createRouteMatcher(["/admin/slots(.*)"]);
+const isBookingsRoute = createRouteMatcher(["/admin/bookings(.*)"]);
+const isAdminHome = createRouteMatcher(["/admin"]);
 
 export default clerkMiddleware(async (auth, req) => {
-  const { userId, sessionClaims } = await auth();
-
-  // Not signed in → Clerk will redirect to sign-in
-  if (isProtectedRoute(req)) {
+  // ─── Any /admin/* route requires sign-in ───
+  if (isAdminRoute(req)) {
     await auth.protect();
   }
 
-  // Admin-only: check role in public metadata
-  if (isAdminRoute(req)) {
-    const role = (sessionClaims?.metadata as { role?: string })?.role;
-    if (role !== "admin") {
-      const url = new URL("/", req.url);
-      return NextResponse.redirect(url);
-    }
+  if (!isAdminRoute(req)) return;
+
+  const { sessionClaims } = await auth();
+  const role = (sessionClaims?.metadata as { role?: string } | undefined)?.role;
+
+  const isAdmin = role === "admin";
+  const isManager = role === "manager";
+
+  // ─── /admin/slots — ADMIN ONLY ───
+  if (isSlotsRoute(req) && !isAdmin) {
+    return NextResponse.redirect(new URL("/admin/bookings", req.url));
+  }
+
+  // ─── /admin/bookings — admin OR manager ───
+  if (isBookingsRoute(req) && !isAdmin && !isManager) {
+    return NextResponse.redirect(new URL("/", req.url));
+  }
+
+  // ─── /admin home — admin OR manager ───
+  if (isAdminHome(req) && !isAdmin && !isManager) {
+    return NextResponse.redirect(new URL("/", req.url));
   }
 });
 
 export const config = {
   matcher: [
-    // Skip Next.js internals and static files
     "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
-    // Always run for API routes
     "/(api|trpc)(.*)",
   ],
 };

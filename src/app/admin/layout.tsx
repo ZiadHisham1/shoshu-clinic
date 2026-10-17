@@ -1,18 +1,21 @@
+import { auth } from "@clerk/nextjs/server";
 import { UserButton } from "@clerk/nextjs";
 import Link from "next/link";
-import { CalendarCheck, Clock, LayoutDashboard } from "lucide-react";
+import { LayoutDashboard } from "lucide-react";
 import { AdminNavTabs } from "./AdminNavTabs";
 
-export const metadata = { title: "لوحة التحكم — shima clinic" };
+export const metadata = { title: "لوحة التحكم — شوشو كلينك" };
 
-export default function AdminLayout({
+export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const { sessionClaims } = await auth();
+  const role = (sessionClaims?.metadata as { role?: string } | undefined)?.role;
+
   return (
     <div className="min-h-screen bg-cream-100">
-      {/* ═══════════ Top bar ═══════════ */}
       <header className="border-b border-ink/10 bg-white">
         <div className="mx-auto flex max-w-[1200px] items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4">
           <Link
@@ -34,11 +37,9 @@ export default function AdminLayout({
           </div>
         </div>
 
-        {/* ═══════════ Nav tabs ═══════════ */}
-        <AdminNavTabs />
+        <AdminNavTabs role={role ?? "user"} />
       </header>
 
-      {/* ═══════════ Page content ═══════════ */}
       <div className="mx-auto max-w-[1200px] px-4 py-6 sm:px-6 sm:py-8">
         {children}
       </div>

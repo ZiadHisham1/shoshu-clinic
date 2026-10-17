@@ -1,4 +1,4 @@
-import { currentUser } from "@clerk/nextjs/server";
+import { currentUser, auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { CalendarCheck, Clock, AlertTriangle, ArrowLeft } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -7,6 +7,10 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminHomePage() {
   const user = await currentUser();
+  const { sessionClaims } = await auth();
+  const role = (sessionClaims?.metadata as { role?: string } | undefined)?.role;
+  const isAdmin = role === "admin";
+
   const supabase = createAdminClient();
 
   /* ── Fetch stats in parallel ── */
@@ -41,12 +45,17 @@ export default async function AdminHomePage() {
       .from("bookings")
       .select("*", { count: "exact", head: true })
       .eq("status", "confirmed"),
-    supabase.from("services").select("id, name").order("name"),
-    supabase
-      .from("slots")
-      .select("id, service_id, start_at")
-      .gte("start_at", now.toISOString())
-      .lte("start_at", in30Days.toISOString()),
+    // Only fetch services + slots if admin — managers don't need them
+    isAdmin
+      ? supabase.from("services").select("id, name").order("name")
+      : Promise.resolve({ data: [], error: null }),
+    isAdmin
+      ? supabase
+          .from("slots")
+          .select("id, service_id, start_at")
+          .gte("start_at", now.toISOString())
+          .lte("start_at", in30Days.toISOString())
+      : Promise.resolve({ data: [], error: null }),
   ]);
 
   const totalBookings = totalBookingsRes.count ?? 0;
@@ -57,18 +66,20 @@ export default async function AdminHomePage() {
   const services = servicesRes.data ?? [];
   const slots = slotsRes.data ?? [];
 
-  /* ── Coverage per service ── */
-  const coverage = services.map((svc) => {
-    const svcSlots = slots.filter((s) => s.service_id === svc.id);
-    const latest = svcSlots.reduce<number>(
-      (max, s) => Math.max(max, new Date(s.start_at).getTime()),
-      0
-    );
-    const daysAhead = latest
-      ? Math.floor((latest - now.getTime()) / (1000 * 60 * 60 * 24))
-      : 0;
-    return { name: svc.name, daysAhead, count: svcSlots.length };
-  });
+  /* ── Coverage per service (admin only) ── */
+  const coverage = isAdmin
+    ? services.map((svc) => {
+        const svcSlots = slots.filter((s) => s.service_id === svc.id);
+        const latest = svcSlots.reduce<number>(
+          (max, s) => Math.max(max, new Date(s.start_at).getTime()),
+          0
+        );
+        const daysAhead = latest
+          ? Math.floor((latest - now.getTime()) / (1000 * 60 * 60 * 24))
+          : 0;
+        return { name: svc.name, daysAhead, count: svcSlots.length };
+      })
+    : [];
 
   const lowCoverage = coverage.filter((c) => c.daysAhead < 30);
 
@@ -122,7 +133,11 @@ export default async function AdminHomePage() {
           الإجراءات السريعة
         </h2>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div
+          className={
+            "grid grid-cols-1 gap-3 " + (isAdmin ? "sm:grid-cols-2" : "")
+          }
+        >
           <NavCard
             href="/admin/bookings"
             title="إدارة الحجوزات"
@@ -130,18 +145,20 @@ export default async function AdminHomePage() {
             icon={<CalendarCheck className="h-6 w-6" />}
             tone="primary"
           />
-          <NavCard
-            href="/admin/slots"
-            title="إدارة المواعيد"
-            description="إنشاء مواعيد متاحة للعملاء وحذف المواعيد القديمة"
-            icon={<Clock className="h-6 w-6" />}
-            tone="pink"
-          />
+          {isAdmin && (
+            <NavCard
+              href="/admin/slots"
+              title="إدارة المواعيد"
+              description="إنشاء مواعيد متاحة للعملاء وحذف المواعيد القديمة"
+              icon={<Clock className="h-6 w-6" />}
+              tone="pink"
+            />
+          )}
         </div>
       </section>
 
-      {/* ═══════════ Coverage warning ═══════════ */}
-      {lowCoverage.length > 0 && (
+      {/* ═══════════ Coverage warning (admin only) ═══════════ */}
+      {isAdmin && lowCoverage.length > 0 && (
         <section className="rounded-2xl bg-amber-50 p-4 ring-1 ring-amber-200 sm:p-5">
           <div className="flex items-start gap-3">
             <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />

@@ -5,13 +5,26 @@ import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /* ============================================================
-   Role gate
+   Role gates
    ============================================================ */
-async function assertAdmin() {
+async function getRole() {
   const { sessionClaims } = await auth();
-  const role = (sessionClaims?.metadata as { role?: string } | undefined)?.role;
+  return (sessionClaims?.metadata as { role?: string } | undefined)?.role;
+}
+
+/** Throws unless the user is an admin. */
+async function assertAdmin() {
+  const role = await getRole();
   if (role !== "admin") {
     throw new Error("NOT_ADMIN");
+  }
+}
+
+/** Throws unless the user is admin OR manager. */
+async function assertAdminOrManager() {
+  const role = await getRole();
+  if (role !== "admin" && role !== "manager") {
+    throw new Error("NOT_AUTHORIZED");
   }
 }
 
@@ -63,6 +76,16 @@ export async function generateSlots(input: GenerateInput) {
       return { ok: false as const, error: "تاريخ البداية بعد تاريخ النهاية" };
     }
 
+    const daysDiff = Math.ceil(
+      (to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    if (daysDiff > 90) {
+      return {
+        ok: false as const,
+        error: `النطاق الزمني كبير جداً (${daysDiff} يوم). الحد الأقصى 90 يوم.`,
+      };
+    }
+
     const [startH, startM] = input.timeStart.split(":").map(Number);
     const [endH, endM] = input.timeEnd.split(":").map(Number);
 
@@ -70,16 +93,43 @@ export async function generateSlots(input: GenerateInput) {
       return { ok: false as const, error: "وقت غير صحيح" };
     }
 
-    const durationMs = input.durationMinutes * 60 * 1000;
+    const supabase = createAdminClient();
 
-    /* ── Build rows ── */
-    const rows: { service_id: string; start_at: string; end_at: string }[] = [];
+    /* ── 1. Fetch ALL existing slots in range (any service) ── */
+    const fromIso = new Date(`${input.dateFrom}T00:00:00`).toISOString();
+    const toIso = new Date(`${input.dateTo}T23:59:59`).toISOString();
+
+    const { data: existingSlots, error: fetchErr } = await supabase
+      .from("slots")
+      .select("start_at, end_at")
+      .gte("start_at", fromIso)
+      .lte("start_at", toIso);
+
+    if (fetchErr) {
+      console.error("[generateSlots] fetch existing:", fetchErr);
+      return { ok: false as const, error: fetchErr.message };
+    }
+
+    const existingRanges = (existingSlots ?? []).map((s) => ({
+      start: new Date(s.start_at).getTime(),
+      end: new Date(s.end_at).getTime(),
+    }));
+
+    /* ── 2. Build candidates, skipping conflicts ── */
+    const durationMs = input.durationMinutes * 60 * 1000;
+    const candidates: {
+      service_id: string;
+      start_at: string;
+      end_at: string;
+    }[] = [];
+
+    let skippedConflicts = 0;
 
     for (let d = new Date(from); d <= to; d.setDate(d.getDate() + 1)) {
-      // Friday is always skipped (weekend)  
+      // Friday is always skipped (weekend)
       if (d.getDay() === 5) continue;
 
-      // Saturday is allowed by default; only skipped if explicitly requested
+      // Saturday is allowed by default; skip only if explicitly requested
       if (input.skipSaturday && d.getDay() === 6) continue;
 
       const dayStart = new Date(d);
@@ -93,39 +143,51 @@ export async function generateSlots(input: GenerateInput) {
         t + durationMs <= dayEnd.getTime();
         t += durationMs
       ) {
-        rows.push({
+        const slotStart = t;
+        const slotEnd = t + durationMs;
+
+        const overlaps = existingRanges.some(
+          (r) => slotStart < r.end && slotEnd > r.start
+        );
+
+        if (overlaps) {
+          skippedConflicts++;
+          continue;
+        }
+
+        candidates.push({
           service_id: input.serviceId,
-          start_at: new Date(t).toISOString(),
-          end_at: new Date(t + durationMs).toISOString(),
+          start_at: new Date(slotStart).toISOString(),
+          end_at: new Date(slotEnd).toISOString(),
         });
       }
     }
 
-    if (rows.length === 0) {
+    if (candidates.length === 0) {
       return {
         ok: false as const,
-        error: "لم يتم إنشاء أي مواعيد بهذه الإعدادات",
+        error:
+          skippedConflicts > 0
+            ? `كل المواعيد في النطاق (${skippedConflicts}) تتعارض مع مواعيد موجودة`
+            : "لم يتم إنشاء أي مواعيد بهذه الإعدادات",
       };
     }
 
-    if (rows.length > 2000) {
+    if (candidates.length > 2000) {
       return {
         ok: false as const,
-        error: `عدد المواعيد كبير جداً (${rows.length}). قلل النطاق.`,
+        error: `عدد المواعيد كبير جداً (${candidates.length}). قلل النطاق.`,
       };
     }
 
-    /* ── Insert in chunks ── */
-    const supabase = createAdminClient();
+    /* ── 3. Insert in chunks ── */
     const CHUNK = 500;
-
-    for (let i = 0; i < rows.length; i += CHUNK) {
-      const chunk = rows.slice(i, i + CHUNK);
+    for (let i = 0; i < candidates.length; i += CHUNK) {
+      const chunk = candidates.slice(i, i + CHUNK);
       const { error } = await supabase.from("slots").upsert(chunk, {
         onConflict: "service_id,start_at",
         ignoreDuplicates: true,
       });
-
       if (error) {
         console.error("[generateSlots] chunk", i, error);
         return { ok: false as const, error: error.message };
@@ -135,7 +197,11 @@ export async function generateSlots(input: GenerateInput) {
     revalidatePath("/admin/slots");
     revalidatePath("/booking");
 
-    return { ok: true as const, inserted: rows.length };
+    return {
+      ok: true as const,
+      inserted: candidates.length,
+      skipped: skippedConflicts,
+    };
   } catch (e) {
     console.error("[generateSlots] unexpected:", e);
     return {
@@ -266,7 +332,7 @@ export async function deleteSlotsRange(input: {
 }
 
 /* ============================================================
-   Update booking status (from admin table row actions)
+   Update booking status (admin OR manager)
    ============================================================ */
 export type BookingStatus = "confirmed" | "completed" | "cancelled";
 
@@ -275,7 +341,7 @@ export async function updateBookingStatus(
   status: BookingStatus
 ) {
   try {
-    await assertAdmin();
+    await assertAdminOrManager();
 
     if (!bookingId) {
       return { ok: false as const, error: "معرف الحجز مفقود" };
@@ -286,7 +352,7 @@ export async function updateBookingStatus(
 
     const supabase = createAdminClient();
 
-    // Cancelled → release the slot
+    // Cancel → release the slot so it becomes bookable again
     if (status === "cancelled") {
       const { data: row } = await supabase
         .from("bookings")
@@ -302,7 +368,7 @@ export async function updateBookingStatus(
       }
     }
 
-    // Confirmed/completed → re-lock the slot
+    // Confirm/complete → re-lock the slot
     if (status === "confirmed" || status === "completed") {
       const { data: row } = await supabase
         .from("bookings")
