@@ -176,7 +176,7 @@ export const tiktokVideos: TikTokVideo[] = [
   {
     id: "1",
     src: videoUrl("video-1.mp4"),
-    poster: imageUrl("tiktok/video-1.jpg"),
+    poster: imageUrl("tiktok/tik-imgs/video-1.png"),
     caption: "نصائح لتخسيس سريع وفعّال",
     views: "12.4K",
     tiktokUrl: "https://www.tiktok.com/@user3920978815806/video/REPLACE-1",
@@ -184,7 +184,7 @@ export const tiktokVideos: TikTokVideo[] = [
   {
     id: "2",
     src: videoUrl("video-2.mp4"),
-    poster: imageUrl("tiktok/video-2.jpg"),
+    poster: imageUrl("tiktok/tik-imgs/video-2.png"),
     caption: "فوائد الحجامة للجسم",
     views: "8.2K",
     tiktokUrl: "https://www.tiktok.com/@user3920978815806/video/REPLACE-2",
@@ -192,7 +192,7 @@ export const tiktokVideos: TikTokVideo[] = [
   {
     id: "3",
     src: videoUrl("video-3.mp4"),
-    poster: imageUrl("tiktok/video-3.jpg"),
+    poster: imageUrl("tiktok/tik-imgs/video-3.png"),
     caption: "تمارين علاج طبيعي للركبة",
     views: "5.7K",
     tiktokUrl: "https://www.tiktok.com/@user3920978815806/video/REPLACE-3",
@@ -200,7 +200,7 @@ export const tiktokVideos: TikTokVideo[] = [
   {
     id: "4",
     src: videoUrl("video-4.mp4"),
-    poster: imageUrl("tiktok/video-4.jpg"),
+    poster: imageUrl("tiktok/tik-imgs/video-4.png"),
     caption: "أخطاء شائعة في التخسيس",
     views: "4.1K",
     tiktokUrl: "https://www.tiktok.com/@user3920978815806/video/REPLACE-4",
@@ -227,7 +227,7 @@ const REVIEWS_BASE =
 export const customerReviews: CustomerReview[] = [
   {
     id: "1",
-    image: `${REVIEWS_BASE}/WhatsApp%20Image%202026-10-17%20at%2000.54.34.jpeg`,
+    image: `${REVIEWS_BASE}/video-1.png`,
     name: "عميل",
   },
   // Add more reviews as you upload them:
